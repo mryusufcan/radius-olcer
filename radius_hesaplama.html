@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yay Hesaplayıcı & 2D Önizleme</title>
+<style>
+  :root{
+    --bg: #0f1720;
+    --panel: #ffffff;
+    --grid: #e7edf3;
+    --ink: #1c2733;
+    --muted: #6b7a8d;
+    --blue: #2563eb;
+    --blue-dim: #dbe6fd;
+    --orange: #ea580c;
+    --line: #d7dee6;
+    --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    --sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:24px;
+    font-family: var(--sans);
+    background:
+      linear-gradient(var(--bg), var(--bg)) fixed,
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 28px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 28px);
+  }
+  .container{
+    background: var(--panel);
+    width:100%;
+    max-width: 520px;
+    border-radius: 14px;
+    padding: 28px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+  }
+  h2{
+    margin: 0 0 4px;
+    font-size: 20px;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .subtitle{
+    margin: 0 0 20px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* mode switch */
+  .mode-switch{
+    display:flex;
+    background: var(--grid);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 20px;
+    gap: 4px;
+  }
+  .mode-switch button{
+    flex:1;
+    border:none;
+    background: transparent;
+    padding: 9px 6px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor:pointer;
+    transition: all .15s ease;
+  }
+  .mode-switch button.active{
+    background: var(--panel);
+    color: var(--blue);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  }
+
+  .input-row{
+    display:flex;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .input-group{ flex:1; }
+  .input-group.hidden{ display:none; }
+  label{
+    display:block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: var(--muted);
+    font-size: 12.5px;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+  }
+  input{
+    width:100%;
+    padding: 10px 11px;
+    border: 1.5px solid var(--line);
+    border-radius: 8px;
+    font-size: 16px;
+    font-family: var(--mono);
+    color: var(--ink);
+    transition: border-color .15s;
+  }
+  input:focus{ border-color: var(--blue); outline:none; }
+
+  .preview-box{
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    background: var(--grid);
+    padding: 8px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    overflow:hidden;
+  }
+  svg{ width:100%; max-height: 230px; height:auto; }
+
+  .results{
+    margin-top: 18px;
+    background: var(--ink);
+    border-radius: 10px;
+    padding: 4px;
+  }
+  .result-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    padding: 11px 14px;
+    font-size: 14px;
+    color: #b9c4d1;
+  }
+  .result-item + .result-item{
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .result-item .value{
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 16px;
+    color: #ffffff;
+  }
+  .result-item.primary .value{ color: #7ea6ff; }
+
+  .warning{
+    margin-top: 12px;
+    background: #fff4ea;
+    border: 1px solid #f3c99a;
+    color: #9a5b00;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    display:none;
+  }
+  .warning.show{ display:block; }
+
+  .copy-btn{
+    width:100%;
+    margin-top: 12px;
+    padding: 10px;
+    border: 1.5px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 13px;
+    border-radius: 8px;
+    cursor:pointer;
+    transition: all .15s;
+  }
+  .copy-btn:hover{ border-color: var(--blue); color: var(--blue); }
+  .copy-btn.copied{ border-color:#16a765; color:#16a765; }
+
+  .surface-switch{
+    display:flex;
+    border: 1.5px solid var(--line);
+    border-radius: 8px;
+    overflow:hidden;
+    height: 42px;
+  }
+  .surface-switch button{
+    flex:1;
+    border:none;
+    background: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor:pointer;
+    transition: all .15s;
+  }
+  .surface-switch button:first-child{ border-right: 1.5px solid var(--line); }
+  .surface-switch button.active{ background: var(--blue); color:#fff; }
+
+  .caption{
+    text-align:center;
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+
+  details.help{
+    margin-top: 16px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    padding: 4px 14px;
+    background: var(--grid);
+  }
+  details.help summary{
+    cursor:pointer;
+    font-weight: 700;
+    font-size: 13.5px;
+    color: var(--ink);
+    padding: 10px 0;
+    list-style: none;
+  }
+  details.help summary::-webkit-details-marker{ display:none; }
+  details.help summary::before{
+    content: "▸";
+    display:inline-block;
+    margin-right: 6px;
+    color: var(--blue);
+    transition: transform .15s;
+  }
+  details.help[open] summary::before{ transform: rotate(90deg); }
+  details.help .help-body{
+    padding: 0 0 14px;
+    font-size: 13px;
+    line-height: 1.55;
+    color: #445064;
+  }
+  details.help .help-body b{ color: var(--ink); }
+  details.help .help-body ul{ margin: 6px 0; padding-left: 20px; }
+  details.help .help-body li{ margin-bottom: 6px; }
+  details.help .help-body code{
+    font-family: var(--mono);
+    background: #fff;
+    border: 1px solid var(--line);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Yay Hesaplayıcı</h2>
+  <p class="subtitle">Genişlik / yükseklik / yarıçap arası dönüşüm</p>
+
+  <div class="mode-switch">
+    <button id="modeBtnFwd" class="active" onclick="setMode('fwd')">W, H → R</button>
+    <button id="modeBtnRev" onclick="setMode('rev')">R, W → H</button>
+  </div>
+
+  <div class="input-row">
+    <div class="input-group" id="grpW">
+      <label for="width">Genişlik (W) - mm</label>
+      <input type="number" id="width" value="100" min="0.1" step="0.1" oninput="hesapla()">
+    </div>
+    <div class="input-group" id="grpH">
+      <label for="height">Yükseklik (H) - mm</label>
+      <input type="number" id="height" value="13" min="0.01" step="0.1" oninput="hesapla()">
+    </div>
+    <div class="input-group hidden" id="grpR">
+      <label for="radiusIn">Yarıçap (R) - mm</label>
+      <input type="number" id="radiusIn" value="200" min="0.1" step="0.1" oninput="hesapla()">
+    </div>
+  </div>
+
+  <div class="input-row">
+    <div class="input-group">
+      <label for="thickness">Kalınlık (t) - mm</label>
+      <input type="number" id="thickness" value="0" min="0" step="0.1" oninput="hesapla()">
+    </div>
+    <div class="input-group">
+      <label>Ölçülen Yüzey</label>
+      <div class="surface-switch">
+        <button id="surfBtnIc" class="active" onclick="setSurface('ic')" type="button">İç</button>
+        <button id="surfBtnDis" onclick="setSurface('dis')" type="button">Dış</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="preview-box">
+    <svg id="previewSvg" viewBox="-70 -60 140 100">
+      <line id="chordLine" x1="-50" y1="0" x2="50" y2="0" stroke="#c3ccd6" stroke-width="1.5" stroke-dasharray="4"/>
+      <line id="heightLine" x1="0" y1="0" x2="0" y2="-13" stroke="var(--orange)" stroke-width="2" stroke-dasharray="2"/>
+      <path id="arcPath" d="" fill="none" stroke="var(--blue)" stroke-width="3" stroke-linecap="round"/>
+      <text id="textW2" x="0" y="15" text-anchor="middle" fill="#5b6b7d" font-family="monospace"></text>
+      <text id="textH" x="5" y="-6" fill="#5b6b7d" font-family="monospace"></text>
+    </svg>
+  </div>
+  <p class="caption" id="surfaceCaption"></p>
+
+  <div class="warning" id="warnBox"></div>
+
+  <div class="results">
+    <div class="result-item primary">
+      <span>İç Yarıçap (R_iç)</span>
+      <span class="value" id="outRic">-</span>
+    </div>
+    <div class="result-item primary">
+      <span>Dış Yarıçap (R_dış)</span>
+      <span class="value" id="outRdis">-</span>
+    </div>
+    <div class="result-item">
+      <span>İç / Dış Çap</span>
+      <span class="value" id="outD">-</span>
+    </div>
+    <div class="result-item">
+      <span>Genişlik / Yükseklik (ölçülen)</span>
+      <span class="value" id="outWH">-</span>
+    </div>
+    <div class="result-item">
+      <span>Merkez Açısı (θ)</span>
+      <span class="value" id="outAngle">-</span>
+    </div>
+    <div class="result-item">
+      <span>Yay Uzunluğu (L, ölçülen yüzey)</span>
+      <span class="value" id="outArcLen">-</span>
+    </div>
+  </div>
+
+  <button class="copy-btn" id="copyBtn" onclick="copySonuc()">Sonucu Kopyala</button>
+
+  <details class="help">
+    <summary>Nasıl kullanılır?</summary>
+    <div class="help-body">
+      <p><b>Temel kavramlar:</b> <code>W</code> = genişlik (yayın iki ucu arasındaki düz mesafe, kiriş), <code>H</code> = yükseklik (kirişin ortasından yayın en derin/yüksek noktasına dik mesafe, sehim), <code>R</code> = yarıçap.</p>
+      <p><b>Mod seçimi (üstteki iki buton):</b></p>
+      <ul>
+        <li><b>W, H → R:</b> Elinde genişlik ve yükseklik ölçümü varsa (örn. cetvelle ölçtüğün bir kavis) bu modu kullan, yarıçap otomatik hesaplanır.</li>
+        <li><b>R, W → H:</b> Yarıçapı zaten biliyorsan (örn. bir şablon/kalıp/boru yarıçapı) ve genişliği giriyorsan, o genişlikteki sehim yüksekliğini verir.</li>
+      </ul>
+      <p><b>Kalınlık (t) ve İç/Dış yüzey:</b> Ölçtüğün parçanın bir et kalınlığı varsa (örn. bükülmüş sac, boru cidarı, kalıp duvarı), önce <b>hangi yüzeyden</b> ölçüm yaptığını (İç ya da Dış) seç, sonra kalınlığı <code>t</code> alanına gir. Diğer yüzeyin yarıçapı otomatik olarak <code>R_dış = R_iç + t</code> formülüyle hesaplanır. Kalınlık yoksa <code>t</code>'yi 0 bırak; iç ve dış yarıçap eşit çıkar.</p>
+      <p><b>Diğer sonuçlar:</b> Merkez açısı (θ) yayın açıklık derecesini, yay uzunluğu (L) ise eğrinin gerçek uzunluğunu (ölçülen yüzeyde) verir.</p>
+      <p><b>Sonucu Kopyala</b> butonu tüm değerleri panoya kopyalar; not defterine veya rapora yapıştırabilirsin.</p>
+    </div>
+  </details>
+</div>
+
+<script>
+let mode = 'fwd';      // 'fwd' = W,H -> R   |   'rev' = R,W -> H
+let surface = 'ic';    // 'ic' = ölçülen yüzey iç   |   'dis' = ölçülen yüzey dış
+
+function setMode(m){
+  mode = m;
+  document.getElementById('modeBtnFwd').classList.toggle('active', m === 'fwd');
+  document.getElementById('modeBtnRev').classList.toggle('active', m === 'rev');
+  document.getElementById('grpH').classList.toggle('hidden', m === 'rev');
+  document.getElementById('grpR').classList.toggle('hidden', m === 'fwd');
+  hesapla();
+}
+
+function setSurface(s){
+  surface = s;
+  document.getElementById('surfBtnIc').classList.toggle('active', s === 'ic');
+  document.getElementById('surfBtnDis').classList.toggle('active', s === 'dis');
+  hesapla();
+}
+
+function fmt(n){
+  if (!isFinite(n)) return '-';
+  return n.toFixed(2) + ' mm';
+}
+
+function hesapla(){
+  const W = parseFloat(document.getElementById('width').value);
+  let H, R;
+  const warnBox = document.getElementById('warnBox');
+  warnBox.classList.remove('show');
+  warnBox.textContent = '';
+
+  if (mode === 'fwd'){
+    H = parseFloat(document.getElementById('height').value);
+    if (isNaN(W) || isNaN(H) || W <= 0 || H <= 0){
+      clearResults();
+      return;
+    }
+    R = ((W * W) / (8 * H)) + (H / 2);
+  } else {
+    R = parseFloat(document.getElementById('radiusIn').value);
+    if (isNaN(W) || isNaN(R) || W <= 0 || R <= 0){
+      clearResults();
+      return;
+    }
+    const inner = R * R - (W / 2) * (W / 2);
+    if (inner < 0){
+      warnBox.textContent = 'Bu genişlik için yarıçap çok küçük. R en az W/2 olmalı.';
+      warnBox.classList.add('show');
+      clearResults();
+      return;
+    }
+    H = R - Math.sqrt(inner);
+  }
+
+  if (H > R * 2){
+    // degenerate / not a valid shallow arc in this geometry
+    warnBox.textContent = 'Girilen değerler geçerli bir yay oluşturmuyor.';
+    warnBox.classList.add('show');
+    clearResults();
+    return;
+  }
+
+  // central half-angle from sin(theta/2) = (W/2)/R  (ölçülen yüzey için)
+  const ratio = Math.min(1, (W / 2) / R);
+  const halfAngleRad = Math.asin(ratio);
+  const angleDeg = halfAngleRad * 2 * (180 / Math.PI);
+  const arcLen = R * (halfAngleRad * 2);
+
+  // Kalınlık / iç-dış yüzey hesabı
+  const t = parseFloat(document.getElementById('thickness').value) || 0;
+  let R_ic, R_dis;
+  if (surface === 'ic'){
+    R_ic = R;
+    R_dis = R + t;
+  } else {
+    R_dis = R;
+    R_ic = R - t;
+  }
+
+  const captionEl = document.getElementById('surfaceCaption');
+  if (R_ic <= 0){
+    warnBox.textContent = 'Kalınlık, iç yarıçaptan büyük olamaz. Değerleri kontrol et.';
+    warnBox.classList.add('show');
+    clearResults();
+    return;
+  }
+  captionEl.textContent = t > 0
+    ? `Ölçülen: ${surface === 'ic' ? 'iç' : 'dış'} yüzey  ·  t = ${t.toFixed(2)} mm`
+    : `Ölçülen: ${surface === 'ic' ? 'iç' : 'dış'} yüzey`;
+
+  document.getElementById('outRic').innerText = fmt(R_ic);
+  document.getElementById('outRdis').innerText = fmt(R_dis);
+  document.getElementById('outD').innerText = `${(2*R_ic).toFixed(2)} / ${(2*R_dis).toFixed(2)} mm`;
+  document.getElementById('outWH').innerText = `${W.toFixed(2)} / ${H.toFixed(2)} mm`;
+  document.getElementById('outAngle').innerText = angleDeg.toFixed(2) + '°';
+  document.getElementById('outArcLen').innerText = fmt(arcLen);
+
+  drawSvg(W, H, R);
+}
+
+function clearResults(){
+  ['outRic','outRdis','outD','outWH','outAngle','outArcLen'].forEach(id => {
+    document.getElementById(id).innerText = '-';
+  });
+  document.getElementById('surfaceCaption').textContent = '';
+}
+
+function drawSvg(W, H, R){
+  const svg = document.getElementById('previewSvg');
+  const arcPath = document.getElementById('arcPath');
+  const chordLine = document.getElementById('chordLine');
+  const heightLine = document.getElementById('heightLine');
+  const textW2 = document.getElementById('textW2');
+  const textH = document.getElementById('textH');
+
+  const largeArcFlag = (H > W / 2) ? 1 : 0;
+
+  arcPath.setAttribute('d', `M ${-W/2} 0 A ${R} ${R} 0 ${largeArcFlag} 1 ${W/2} 0`);
+  chordLine.setAttribute('x1', -W/2);
+  chordLine.setAttribute('x2', W/2);
+  heightLine.setAttribute('y2', -H);
+
+  const baseScale = Math.max(W, H);
+  const fontS = baseScale * 0.07;
+  const strokeW = baseScale * 0.015;
+
+  textW2.textContent = `W: ${W.toFixed(1)} mm`;
+  textW2.setAttribute('y', fontS * 1.5);
+  textW2.setAttribute('font-size', fontS);
+
+  textH.textContent = `H: ${H.toFixed(1)} mm`;
+  textH.setAttribute('x', fontS * 0.3);
+  textH.setAttribute('y', -H/2 + fontS * 0.3);
+  textH.setAttribute('font-size', fontS);
+
+  arcPath.setAttribute('stroke-width', strokeW * 1.5);
+  chordLine.setAttribute('stroke-width', strokeW);
+  heightLine.setAttribute('stroke-width', strokeW);
+
+  const minX = (H > R) ? -R : -W/2;
+  const maxX = (H > R) ? R : W/2;
+  const minY = -H;
+
+  const pad = baseScale * 0.2;
+  const vMinX = minX - pad;
+  const vMinY = minY - pad;
+  const vWidth = (maxX - minX) + (2 * pad);
+  const vHeight = H + (fontS * 2.5) + (2 * pad);
+
+  svg.setAttribute('viewBox', `${vMinX} ${vMinY} ${vWidth} ${vHeight}`);
+}
+
+function copySonuc(){
+  const R = document.getElementById('outR').innerText;
+  const D = document.getElementById('outD').innerText;
+  const WH = document.getElementById('outWH').innerText;
+  const angle = document.getElementById('outAngle').innerText;
+  const arcLen = document.getElementById('outArcLen').innerText;
+  const text = `Yarıçap (R): ${R}\nÇap (D): ${D}\nGenişlik/Yükseklik: ${WH}\nMerkez Açısı: ${angle}\nYay Uzunluğu: ${arcLen}`;
+
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyBtn');
+    const original = btn.textContent;
+    btn.textContent = 'Kopyalandı ✓';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = original;
+      btn.classList.remove('copied');
+    }, 1500);
+  });
+}
+
+hesapla();
+</script>
+
+</body>
+</html>
