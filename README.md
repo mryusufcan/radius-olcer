@@ -1,4 +1,3 @@
-```markdown
 # 📐 Radius Ölçek (Radius Gauge)
 
 ![Lisans](https://img.shields.io/badge/Lisans-MIT-blue.svg)
@@ -21,7 +20,6 @@ Projeyi yerel ortamınızda incelemek veya geliştirmek için aşağıdaki adım
 1. Bu depoyu bilgisayarınıza klonlayın:
    ```bash
    git clone [https://github.com/mryusufcan/radius-olcer.git](https://github.com/mryusufcan/radius-olcer.git)
-
 ```
 
 2. Proje dizinine gidin:
