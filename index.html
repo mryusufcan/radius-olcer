@@ -1,519 +1,903 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Yay Hesaplayıcı & 2D Önizleme</title>
-<style>
-  :root{
-    --bg: #0f1720;
-    --panel: #ffffff;
-    --grid: #e7edf3;
-    --ink: #1c2733;
-    --muted: #6b7a8d;
-    --blue: #2563eb;
-    --blue-dim: #dbe6fd;
-    --orange: #ea580c;
-    --line: #d7dee6;
-    --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-    --sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  }
-  * { box-sizing: border-box; }
-  body{
-    margin:0;
-    min-height:100vh;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    padding:24px;
-    font-family: var(--sans);
-    background:
-      linear-gradient(var(--bg), var(--bg)) fixed,
-      repeating-linear-gradient(0deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 28px),
-      repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 28px);
-  }
-  .container{
-    background: var(--panel);
-    width:100%;
-    max-width: 520px;
-    border-radius: 14px;
-    padding: 28px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.35);
-  }
-  h2{
-    margin: 0 0 4px;
-    font-size: 20px;
-    color: var(--ink);
-    letter-spacing: -0.01em;
-  }
-  .subtitle{
-    margin: 0 0 20px;
-    font-size: 13px;
-    color: var(--muted);
-  }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b1220">
+  <meta name="description" content="Genişlik, yükseklik ve yarıçap değerleriyle hızlı yay hesaplama aracı.">
+  <title>Radius Ölçer — Yay yarıçapı hesaplayıcı</title>
+  <style>
+    :root {
+      --ink: #102033;
+      --ink-soft: #34465a;
+      --muted: #66788c;
+      --muted-light: #8fa1b5;
+      --surface: #f7f9fc;
+      --panel: #ffffff;
+      --panel-soft: #f1f5f9;
+      --line: #dce5ef;
+      --line-strong: #c7d4e1;
+      --navy: #0b1220;
+      --navy-soft: #131f31;
+      --blue: #2563eb;
+      --blue-dark: #1d4ed8;
+      --blue-soft: #eaf1ff;
+      --amber: #f59e0b;
+      --amber-soft: #fff6df;
+      --green: #059669;
+      --green-soft: #eafaf4;
+      --shadow-lg: 0 28px 80px rgba(5, 15, 30, .22);
+      --shadow-md: 0 12px 34px rgba(20, 43, 72, .09);
+      --radius-lg: 24px;
+      --radius-md: 16px;
+      --radius-sm: 11px;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    }
 
-  /* mode switch */
-  .mode-switch{
-    display:flex;
-    background: var(--grid);
-    border-radius: 10px;
-    padding: 4px;
-    margin-bottom: 20px;
-    gap: 4px;
-  }
-  .mode-switch button{
-    flex:1;
-    border:none;
-    background: transparent;
-    padding: 9px 6px;
-    border-radius: 7px;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--muted);
-    cursor:pointer;
-    transition: all .15s ease;
-  }
-  .mode-switch button.active{
-    background: var(--panel);
-    color: var(--blue);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
-  }
+    * { box-sizing: border-box; }
 
-  .input-row{
-    display:flex;
-    gap: 12px;
-    margin-bottom: 18px;
-  }
-  .input-group{ flex:1; }
-  .input-group.hidden{ display:none; }
-  label{
-    display:block;
-    margin-bottom: 6px;
-    font-weight: 600;
-    color: var(--muted);
-    font-size: 12.5px;
-    text-transform: uppercase;
-    letter-spacing: .03em;
-  }
-  input{
-    width:100%;
-    padding: 10px 11px;
-    border: 1.5px solid var(--line);
-    border-radius: 8px;
-    font-size: 16px;
-    font-family: var(--mono);
-    color: var(--ink);
-    transition: border-color .15s;
-  }
-  input:focus{ border-color: var(--blue); outline:none; }
+    html { min-width: 320px; }
 
-  .preview-box{
-    border: 1.5px solid var(--line);
-    border-radius: 10px;
-    background: var(--grid);
-    padding: 8px;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    overflow:hidden;
-  }
-  svg{ width:100%; max-height: 230px; height:auto; }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--sans);
+      background:
+        radial-gradient(circle at 12% 12%, rgba(37, 99, 235, .18), transparent 31rem),
+        radial-gradient(circle at 90% 80%, rgba(14, 165, 233, .10), transparent 28rem),
+        var(--navy);
+    }
 
-  .results{
-    margin-top: 18px;
-    background: var(--ink);
-    border-radius: 10px;
-    padding: 4px;
-  }
-  .result-item{
-    display:flex;
-    justify-content:space-between;
-    align-items:baseline;
-    padding: 11px 14px;
-    font-size: 14px;
-    color: #b9c4d1;
-  }
-  .result-item + .result-item{
-    border-top: 1px solid rgba(255,255,255,0.08);
-  }
-  .result-item .value{
-    font-family: var(--mono);
-    font-weight: 700;
-    font-size: 16px;
-    color: #ffffff;
-  }
-  .result-item.primary .value{ color: #7ea6ff; }
+    body::before {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      content: "";
+      opacity: .22;
+      background-image:
+        linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px);
+      background-size: 36px 36px;
+      mask-image: linear-gradient(to bottom, #000, transparent 82%);
+    }
 
-  .warning{
-    margin-top: 12px;
-    background: #fff4ea;
-    border: 1px solid #f3c99a;
-    color: #9a5b00;
-    padding: 10px 12px;
-    border-radius: 8px;
-    font-size: 12.5px;
-    display:none;
-  }
-  .warning.show{ display:block; }
+    button, input { font: inherit; }
+    button { -webkit-tap-highlight-color: transparent; }
 
-  .copy-btn{
-    width:100%;
-    margin-top: 12px;
-    padding: 10px;
-    border: 1.5px solid var(--line);
-    background: var(--panel);
-    color: var(--ink);
-    font-weight: 600;
-    font-size: 13px;
-    border-radius: 8px;
-    cursor:pointer;
-    transition: all .15s;
-  }
-  .copy-btn:hover{ border-color: var(--blue); color: var(--blue); }
-  .copy-btn.copied{ border-color:#16a765; color:#16a765; }
+    .page-shell {
+      width: min(1180px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 30px 0 34px;
+    }
 
-  .surface-switch{
-    display:flex;
-    border: 1.5px solid var(--line);
-    border-radius: 8px;
-    overflow:hidden;
-    height: 42px;
-  }
-  .surface-switch button{
-    flex:1;
-    border:none;
-    background: #fff;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--muted);
-    cursor:pointer;
-    transition: all .15s;
-  }
-  .surface-switch button:first-child{ border-right: 1.5px solid var(--line); }
-  .surface-switch button.active{ background: var(--blue); color:#fff; }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 42px;
+      color: #fff;
+    }
 
-  .caption{
-    text-align:center;
-    font-size: 11.5px;
-    color: var(--muted);
-    margin-top: 8px;
-  }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      color: inherit;
+      text-decoration: none;
+    }
 
-  details.help{
-    margin-top: 16px;
-    border: 1.5px solid var(--line);
-    border-radius: 10px;
-    padding: 4px 14px;
-    background: var(--grid);
-  }
-  details.help summary{
-    cursor:pointer;
-    font-weight: 700;
-    font-size: 13.5px;
-    color: var(--ink);
-    padding: 10px 0;
-    list-style: none;
-  }
-  details.help summary::-webkit-details-marker{ display:none; }
-  details.help summary::before{
-    content: "▸";
-    display:inline-block;
-    margin-right: 6px;
-    color: var(--blue);
-    transition: transform .15s;
-  }
-  details.help[open] summary::before{ transform: rotate(90deg); }
-  details.help .help-body{
-    padding: 0 0 14px;
-    font-size: 13px;
-    line-height: 1.55;
-    color: #445064;
-  }
-  details.help .help-body b{ color: var(--ink); }
-  details.help .help-body ul{ margin: 6px 0; padding-left: 20px; }
-  details.help .help-body li{ margin-bottom: 6px; }
-  details.help .help-body code{
-    font-family: var(--mono);
-    background: #fff;
-    border: 1px solid var(--line);
-    padding: 1px 5px;
-    border-radius: 4px;
-  }
-</style>
+    .brand-mark {
+      display: grid;
+      width: 40px;
+      height: 40px;
+      place-items: center;
+      border: 1px solid rgba(147, 197, 253, .34);
+      border-radius: 13px;
+      background: linear-gradient(145deg, rgba(37, 99, 235, .95), rgba(14, 165, 233, .65));
+      box-shadow: 0 8px 22px rgba(37, 99, 235, .28);
+    }
+
+    .brand-mark svg { width: 23px; height: 23px; }
+
+    .brand-name {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -.02em;
+    }
+
+    .brand-subtitle {
+      margin-top: 2px;
+      color: #8fa1b5;
+      font-size: 11px;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border: 1px solid rgba(148, 163, 184, .22);
+      border-radius: 999px;
+      color: #c8d5e3;
+      background: rgba(255,255,255,.06);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #34d399;
+      box-shadow: 0 0 0 4px rgba(52, 211, 153, .13);
+    }
+
+    .hero { max-width: 780px; margin-bottom: 28px; color: #fff; }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 14px;
+      color: #93c5fd;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      width: 26px;
+      height: 2px;
+      content: "";
+      border-radius: 10px;
+      background: var(--blue);
+    }
+
+    h1 {
+      max-width: 720px;
+      margin: 0;
+      font-size: clamp(2.35rem, 5vw, 4.55rem);
+      line-height: .98;
+      letter-spacing: -.065em;
+    }
+
+    .hero-copy {
+      max-width: 620px;
+      margin: 18px 0 0;
+      color: #9fb0c4;
+      font-size: 16px;
+      line-height: 1.65;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(320px, .82fr) minmax(440px, 1.18fr);
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, .3);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .control-panel { padding: clamp(24px, 4vw, 42px); background: var(--panel); }
+    .visual-panel { padding: clamp(24px, 4vw, 42px); background: linear-gradient(145deg, #f5f8fc, #edf3f9); }
+
+    .section-kicker {
+      margin: 0 0 8px;
+      color: var(--blue);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      margin: 0;
+      color: var(--ink);
+      font-size: 24px;
+      line-height: 1.15;
+      letter-spacing: -.04em;
+    }
+
+    .section-copy {
+      margin: 9px 0 24px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .mode-switch, .surface-switch {
+      display: grid;
+      gap: 5px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel-soft);
+    }
+
+    .mode-switch { grid-template-columns: 1fr 1fr; margin-bottom: 26px; }
+    .surface-switch { grid-template-columns: 1fr 1fr; min-height: 51px; }
+
+    .mode-switch button, .surface-switch button {
+      min-height: 43px;
+      padding: 9px 10px;
+      border: 0;
+      border-radius: 10px;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+      transition: color .18s ease, background .18s ease, box-shadow .18s ease, transform .18s ease;
+    }
+
+    .mode-switch button:hover, .surface-switch button:hover { color: var(--blue); }
+    .mode-switch button:focus-visible, .surface-switch button:focus-visible, .copy-btn:focus-visible, details summary:focus-visible {
+      outline: 3px solid rgba(37, 99, 235, .25);
+      outline-offset: 2px;
+    }
+
+    .mode-switch button.active, .surface-switch button.active {
+      color: #fff;
+      background: var(--blue);
+      box-shadow: 0 5px 12px rgba(37, 99, 235, .23);
+    }
+
+    .mode-switch button.active:hover, .surface-switch button.active:hover { color: #fff; background: var(--blue-dark); }
+
+    .mode-note {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      min-height: 40px;
+      margin: -12px 0 24px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .mode-note svg { flex: 0 0 auto; margin-top: 1px; color: var(--blue); }
+
+    .input-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .input-group.hidden { display: none; }
+
+    label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+      color: var(--ink-soft);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .unit-label {
+      color: var(--muted-light);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .input-wrap { position: relative; }
+
+    input {
+      width: 100%;
+      min-height: 52px;
+      padding: 13px 46px 13px 15px;
+      border: 1.5px solid var(--line);
+      border-radius: 12px;
+      color: var(--ink);
+      outline: none;
+      background: #fbfdff;
+      font-family: var(--mono);
+      font-size: 17px;
+      font-weight: 650;
+      transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+    }
+
+    input:hover { border-color: var(--line-strong); }
+    input:focus { border-color: var(--blue); background: #fff; box-shadow: 0 0 0 4px rgba(37, 99, 235, .11); }
+    input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { margin: 0; -webkit-appearance: none; }
+    input[type=number] { appearance: textfield; }
+
+    .input-unit {
+      position: absolute;
+      top: 50%;
+      right: 14px;
+      color: var(--muted-light);
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      pointer-events: none;
+      transform: translateY(-50%);
+    }
+
+    .surface-label { margin-bottom: 8px; }
+
+    .surface-hint {
+      margin: 9px 0 0;
+      color: var(--muted-light);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .control-divider { height: 1px; margin: 26px 0; background: var(--line); }
+
+    .quick-tip {
+      display: flex;
+      gap: 11px;
+      padding: 13px 14px;
+      border: 1px solid #d8e5ff;
+      border-radius: var(--radius-sm);
+      color: #36527a;
+      background: var(--blue-soft);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .quick-tip svg { flex: 0 0 auto; color: var(--blue); }
+
+    .visual-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .visual-head h2 { font-size: 20px; }
+    .visual-head p { margin: 7px 0 0; color: var(--muted); font-size: 12px; }
+
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 10px;
+      border: 1px solid #cfe2ff;
+      border-radius: 999px;
+      color: var(--blue-dark);
+      background: #fff;
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .live-badge::before { width: 6px; height: 6px; content: ""; border-radius: 50%; background: var(--blue); box-shadow: 0 0 0 3px #dbeafe; }
+
+    .preview-box {
+      position: relative;
+      min-height: 330px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border: 1px solid #d6e1ec;
+      border-radius: 18px;
+      background:
+        linear-gradient(rgba(148,163,184,.14) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148,163,184,.14) 1px, transparent 1px),
+        #f8fbfe;
+      background-size: 28px 28px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+    }
+
+    .preview-box::after {
+      position: absolute;
+      inset: auto 12% 16px;
+      height: 36px;
+      content: "";
+      border-radius: 50%;
+      background: rgba(37, 99, 235, .10);
+      filter: blur(17px);
+      pointer-events: none;
+    }
+
+    #previewSvg { position: relative; z-index: 1; width: 100%; height: auto; max-height: 330px; overflow: visible; }
+    #arcPath { filter: drop-shadow(0 4px 5px rgba(37, 99, 235, .18)); }
+    .svg-label { fill: #475569; font-family: var(--mono); font-weight: 700; }
+    .svg-label-accent { fill: var(--blue-dark); }
+    .svg-label-warm { fill: #b45309; }
+    .svg-point { fill: #fff; stroke: var(--blue); stroke-width: 1.6; }
+
+    .diagram-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin: 14px 2px 0;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .legend-item { display: inline-flex; align-items: center; gap: 7px; }
+    .legend-line { width: 22px; height: 3px; border-radius: 9px; background: var(--blue); }
+    .legend-line.chord { height: 0; border-top: 2px dashed #a9b7c5; background: transparent; }
+    .legend-line.height { height: 0; border-top: 2px dashed var(--amber); background: transparent; }
+
+    .caption {
+      min-height: 18px;
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+      text-align: right;
+    }
+
+    .warning {
+      display: none;
+      margin-top: 14px;
+      padding: 12px 14px;
+      border: 1px solid #f5d48b;
+      border-radius: 12px;
+      color: #8a5a08;
+      background: var(--amber-soft);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .warning.show { display: flex; align-items: flex-start; gap: 9px; }
+    .warning.show::before { content: "!"; display: inline-grid; width: 18px; height: 18px; flex: 0 0 auto; place-items: center; border-radius: 50%; color: #fff; background: var(--amber); font-size: 11px; font-weight: 900; }
+
+    .results-heading {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 27px 0 12px;
+    }
+
+    .results-heading h3 { margin: 0; color: var(--ink); font-size: 14px; letter-spacing: -.01em; }
+    .results-heading span { color: var(--muted-light); font-size: 11px; }
+
+    .result-feature-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+
+    .feature-result, .metric-result {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.9);
+      box-shadow: 0 4px 12px rgba(20,43,72,.03);
+    }
+
+    .feature-result { padding: 15px; border-radius: 14px; }
+    .feature-result.primary { border-color: #c7dafe; background: linear-gradient(145deg, #f7faff, #edf4ff); }
+    .result-label { color: var(--muted); font-size: 11px; line-height: 1.35; }
+    .feature-result .result-value { display: block; margin-top: 10px; color: var(--blue-dark); font-family: var(--mono); font-size: 19px; font-weight: 800; letter-spacing: -.04em; }
+
+    .metric-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+    .metric-result { display: flex; min-height: 68px; flex-direction: column; justify-content: space-between; padding: 12px 14px; border-radius: 12px; }
+    .metric-result .result-value { display: block; margin-top: 7px; color: var(--ink); font-family: var(--mono); font-size: 14px; font-weight: 800; }
+
+    .copy-btn {
+      width: 100%;
+      min-height: 50px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      margin-top: 16px;
+      padding: 12px 16px;
+      border: 0;
+      border-radius: 12px;
+      color: #fff;
+      background: var(--blue);
+      box-shadow: 0 9px 18px rgba(37, 99, 235, .2);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 800;
+      transition: background .18s ease, transform .18s ease, box-shadow .18s ease;
+    }
+
+    .copy-btn:hover { background: var(--blue-dark); box-shadow: 0 12px 22px rgba(37, 99, 235, .26); transform: translateY(-1px); }
+    .copy-btn:active { transform: translateY(0); }
+    .copy-btn.copied { background: var(--green); box-shadow: 0 9px 18px rgba(5, 150, 105, .2); }
+
+    .help {
+      margin-top: 18px;
+      border-top: 1px solid var(--line);
+      padding-top: 16px;
+    }
+
+    .help summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      cursor: pointer;
+      list-style: none;
+      color: var(--ink-soft);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .help summary::-webkit-details-marker { display: none; }
+    .help summary::after { content: "+"; color: var(--blue); font-size: 18px; font-weight: 400; line-height: 1; }
+    .help[open] summary::after { content: "−"; }
+    .help-body { padding: 14px 0 0; color: var(--muted); font-size: 12px; line-height: 1.65; }
+    .help-body p { margin: 0 0 11px; }
+    .help-body p:last-child { margin-bottom: 0; }
+    .help-body strong { color: var(--ink-soft); }
+    .help-body code { padding: 2px 5px; border: 1px solid var(--line); border-radius: 5px; color: var(--blue-dark); background: var(--blue-soft); font-family: var(--mono); font-size: 11px; }
+
+    footer { padding: 22px 2px 0; color: #71849a; font-size: 11px; text-align: center; }
+
+    @media (max-width: 900px) {
+      .workspace { grid-template-columns: 1fr; }
+      .control-panel { border-bottom: 1px solid var(--line); }
+      .visual-panel { padding-top: 30px; }
+    }
+
+    @media (max-width: 600px) {
+      .page-shell { width: min(100% - 24px, 540px); padding: 18px 0 24px; }
+      .topbar { margin-bottom: 33px; }
+      .status-pill { display: none; }
+      h1 { font-size: clamp(2.35rem, 12vw, 3.45rem); }
+      .hero-copy { font-size: 14px; }
+      .workspace { border-radius: 20px; }
+      .control-panel, .visual-panel { padding: 22px 18px; }
+      .input-row { grid-template-columns: 1fr; gap: 16px; }
+      .preview-box { min-height: 260px; }
+      #previewSvg { max-height: 270px; }
+      .visual-head { align-items: center; }
+      .live-badge { padding: 7px 9px; font-size: 9px; }
+      .result-feature-grid, .metric-grid { grid-template-columns: 1fr; }
+      .caption { text-align: left; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+    }
+  </style>
 </head>
 <body>
+  <main class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="Radius Ölçer ana sayfa">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M4 17.5c2.1-6.8 6.2-10.2 12.4-10.2 1.2 0 2.4.1 3.6.4" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            <path d="M4 17.5h16" stroke="#bfdbfe" stroke-width="1.5" stroke-dasharray="2.5 2.5"/>
+            <circle cx="4" cy="17.5" r="1.6" fill="white"/><circle cx="20" cy="7.7" r="1.6" fill="white"/>
+          </svg>
+        </span>
+        <span>
+          <span class="brand-name">Radius Ölçer</span>
+          <span class="brand-subtitle">Teknik ölçüm aracı</span>
+        </span>
+      </a>
+      <div class="status-pill"><span class="status-dot"></span>Canlı hesaplama</div>
+    </header>
 
-<div class="container">
-  <h2>Yay Hesaplayıcı</h2>
-  <p class="subtitle">Genişlik / yükseklik / yarıçap arası dönüşüm</p>
+    <section class="hero" aria-labelledby="page-title">
+      <p class="eyebrow">Hızlı ve hassas</p>
+      <h1 id="page-title">Yay yarıçapını saniyeler içinde hesapla.</h1>
+      <p class="hero-copy">Genişlik ve yükseklik ölçülerinden yarıçapı bulun; kalınlık, yüzey ve yay uzunluğu gibi detayları tek ekranda görün.</p>
+    </section>
 
-  <div class="mode-switch">
-    <button id="modeBtnFwd" class="active" onclick="setMode('fwd')">W, H → R</button>
-    <button id="modeBtnRev" onclick="setMode('rev')">R, W → H</button>
-  </div>
+    <section class="workspace" aria-label="Yay hesaplama çalışma alanı">
+      <section class="control-panel" aria-labelledby="controls-title">
+        <p class="section-kicker">01 / Ölçüleri gir</p>
+        <h2 id="controls-title">Hesaplama yöntemi</h2>
+        <p class="section-copy">Elinizdeki ölçülere göre uygun modu seçin. Sonuçlar siz yazdıkça güncellenir.</p>
 
-  <div class="input-row">
-    <div class="input-group" id="grpW">
-      <label for="width">Genişlik (W) - mm</label>
-      <input type="number" id="width" value="100" min="0.1" step="0.1" oninput="hesapla()">
-    </div>
-    <div class="input-group" id="grpH">
-      <label for="height">Yükseklik (H) - mm</label>
-      <input type="number" id="height" value="13" min="0.01" step="0.1" oninput="hesapla()">
-    </div>
-    <div class="input-group hidden" id="grpR">
-      <label for="radiusIn">Yarıçap (R) - mm</label>
-      <input type="number" id="radiusIn" value="200" min="0.1" step="0.1" oninput="hesapla()">
-    </div>
-  </div>
+        <div class="mode-switch" role="group" aria-label="Hesaplama modu">
+          <button id="modeBtnFwd" class="active" type="button" aria-pressed="true" onclick="setMode('fwd')">W, H <span aria-hidden="true">→</span> R</button>
+          <button id="modeBtnRev" type="button" aria-pressed="false" onclick="setMode('rev')">R, W <span aria-hidden="true">→</span> H</button>
+        </div>
 
-  <div class="input-row">
-    <div class="input-group">
-      <label for="thickness">Kalınlık (t) - mm</label>
-      <input type="number" id="thickness" value="0" min="0" step="0.1" oninput="hesapla()">
-    </div>
-    <div class="input-group">
-      <label>Ölçülen Yüzey</label>
-      <div class="surface-switch">
-        <button id="surfBtnIc" class="active" onclick="setSurface('ic')" type="button">İç</button>
-        <button id="surfBtnDis" onclick="setSurface('dis')" type="button">Dış</button>
-      </div>
-    </div>
-  </div>
+        <div class="mode-note" id="modeNote">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 10v6M12 7.4v.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <span>Genişlik ve sehim yüksekliğini girin; yay yarıçapını otomatik hesaplayalım.</span>
+        </div>
 
-  <div class="preview-box">
-    <svg id="previewSvg" viewBox="-70 -60 140 100">
-      <line id="chordLine" x1="-50" y1="0" x2="50" y2="0" stroke="#c3ccd6" stroke-width="1.5" stroke-dasharray="4"/>
-      <line id="heightLine" x1="0" y1="0" x2="0" y2="-13" stroke="var(--orange)" stroke-width="2" stroke-dasharray="2"/>
-      <path id="arcPath" d="" fill="none" stroke="var(--blue)" stroke-width="3" stroke-linecap="round"/>
-      <text id="textW2" x="0" y="15" text-anchor="middle" fill="#5b6b7d" font-family="monospace"></text>
-      <text id="textH" x="5" y="-6" fill="#5b6b7d" font-family="monospace"></text>
-    </svg>
-  </div>
-  <p class="caption" id="surfaceCaption"></p>
+        <div class="input-row">
+          <div class="input-group">
+            <label for="width"><span>Genişlik (W)</span><span class="unit-label">milimetre</span></label>
+            <div class="input-wrap"><input type="number" id="width" value="100" min="0.1" step="0.1" oninput="hesapla()"><span class="input-unit">mm</span></div>
+          </div>
+          <div class="input-group" id="grpH">
+            <label for="height"><span>Yükseklik (H)</span><span class="unit-label">sehim</span></label>
+            <div class="input-wrap"><input type="number" id="height" value="13" min="0.01" step="0.1" oninput="hesapla()"><span class="input-unit">mm</span></div>
+          </div>
+          <div class="input-group hidden" id="grpR">
+            <label for="radiusIn"><span>Yarıçap (R)</span><span class="unit-label">bilinen değer</span></label>
+            <div class="input-wrap"><input type="number" id="radiusIn" value="200" min="0.1" step="0.1" oninput="hesapla()"><span class="input-unit">mm</span></div>
+          </div>
+        </div>
 
-  <div class="warning" id="warnBox"></div>
+        <div class="input-row">
+          <div class="input-group">
+            <label for="thickness"><span>Kalınlık (t)</span><span class="unit-label">opsiyonel</span></label>
+            <div class="input-wrap"><input type="number" id="thickness" value="0" min="0" step="0.1" oninput="hesapla()"><span class="input-unit">mm</span></div>
+          </div>
+          <div class="input-group">
+            <label class="surface-label"><span>Ölçülen yüzey</span><span class="unit-label">referans</span></label>
+            <div class="surface-switch" role="group" aria-label="Ölçülen yüzey">
+              <button id="surfBtnIc" class="active" type="button" aria-pressed="true" onclick="setSurface('ic')">İç yüzey</button>
+              <button id="surfBtnDis" type="button" aria-pressed="false" onclick="setSurface('dis')">Dış yüzey</button>
+            </div>
+            <p class="surface-hint">Kalınlık girerseniz diğer yüzeyin yarıçapı da hesaplanır.</p>
+          </div>
+        </div>
 
-  <div class="results">
-    <div class="result-item primary">
-      <span>İç Yarıçap (R_iç)</span>
-      <span class="value" id="outRic">-</span>
-    </div>
-    <div class="result-item primary">
-      <span>Dış Yarıçap (R_dış)</span>
-      <span class="value" id="outRdis">-</span>
-    </div>
-    <div class="result-item">
-      <span>İç / Dış Çap</span>
-      <span class="value" id="outD">-</span>
-    </div>
-    <div class="result-item">
-      <span>Genişlik / Yükseklik (ölçülen)</span>
-      <span class="value" id="outWH">-</span>
-    </div>
-    <div class="result-item">
-      <span>Merkez Açısı (θ)</span>
-      <span class="value" id="outAngle">-</span>
-    </div>
-    <div class="result-item">
-      <span>Yay Uzunluğu (L, ölçülen yüzey)</span>
-      <span class="value" id="outArcLen">-</span>
-    </div>
-  </div>
+        <div class="control-divider"></div>
+        <div class="quick-tip">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5a6.5 6.5 0 0 0-3.7 11.84c.65.47 1.1 1.23 1.1 2.04h5.2c0-.81.45-1.57 1.1-2.04A6.5 6.5 0 0 0 12 3.5Z" stroke="currentColor" stroke-width="1.8"/><path d="M9.8 20h4.4M10 17.5h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span><strong>İpucu:</strong> W, yayın iki ucu arasındaki düz mesafedir; H ise bu çizgiden kavisin en derin noktasına olan mesafedir.</span>
+        </div>
+      </section>
 
-  <button class="copy-btn" id="copyBtn" onclick="copySonuc()">Sonucu Kopyala</button>
+      <section class="visual-panel" aria-labelledby="preview-title">
+        <div class="visual-head">
+          <div>
+            <p class="section-kicker">02 / Sonucu gör</p>
+            <h2 id="preview-title">Canlı yay önizlemesi</h2>
+            <p>Geometri, girdiğiniz değerlere göre anlık olarak çizilir.</p>
+          </div>
+          <div class="live-badge">Anlık</div>
+        </div>
 
-  <details class="help">
-    <summary>Nasıl kullanılır?</summary>
-    <div class="help-body">
-      <p><b>Temel kavramlar:</b> <code>W</code> = genişlik (yayın iki ucu arasındaki düz mesafe, kiriş), <code>H</code> = yükseklik (kirişin ortasından yayın en derin/yüksek noktasına dik mesafe, sehim), <code>R</code> = yarıçap.</p>
-      <p><b>Mod seçimi (üstteki iki buton):</b></p>
-      <ul>
-        <li><b>W, H → R:</b> Elinde genişlik ve yükseklik ölçümü varsa (örn. cetvelle ölçtüğün bir kavis) bu modu kullan, yarıçap otomatik hesaplanır.</li>
-        <li><b>R, W → H:</b> Yarıçapı zaten biliyorsan (örn. bir şablon/kalıp/boru yarıçapı) ve genişliği giriyorsan, o genişlikteki sehim yüksekliğini verir.</li>
-      </ul>
-      <p><b>Kalınlık (t) ve İç/Dış yüzey:</b> Ölçtüğün parçanın bir et kalınlığı varsa (örn. bükülmüş sac, boru cidarı, kalıp duvarı), önce <b>hangi yüzeyden</b> ölçüm yaptığını (İç ya da Dış) seç, sonra kalınlığı <code>t</code> alanına gir. Diğer yüzeyin yarıçapı otomatik olarak <code>R_dış = R_iç + t</code> formülüyle hesaplanır. Kalınlık yoksa <code>t</code>'yi 0 bırak; iç ve dış yarıçap eşit çıkar.</p>
-      <p><b>Diğer sonuçlar:</b> Merkez açısı (θ) yayın açıklık derecesini, yay uzunluğu (L) ise eğrinin gerçek uzunluğunu (ölçülen yüzeyde) verir.</p>
-      <p><b>Sonucu Kopyala</b> butonu tüm değerleri panoya kopyalar; not defterine veya rapora yapıştırabilirsin.</p>
-    </div>
-  </details>
-</div>
+        <div class="preview-box" aria-label="Yay geometrisi önizlemesi">
+          <svg id="previewSvg" viewBox="-70 -60 140 100" role="img" aria-labelledby="diagramTitle diagramDesc">
+            <title id="diagramTitle">Yay geometrisi</title>
+            <desc id="diagramDesc">Genişlik ve yükseklik ölçülerini gösteren yay çizimi.</desc>
+            <line id="chordLine" x1="-50" y1="0" x2="50" y2="0" stroke="#a9b7c5" stroke-width="1.5" stroke-dasharray="4"/>
+            <line id="heightLine" x1="0" y1="0" x2="0" y2="-13" stroke="var(--amber)" stroke-width="2" stroke-dasharray="2"/>
+            <path id="arcPath" d="" fill="none" stroke="var(--blue)" stroke-width="3" stroke-linecap="round"/>
+            <circle id="leftPoint" class="svg-point" cx="-50" cy="0" r="2.2"/>
+            <circle id="rightPoint" class="svg-point" cx="50" cy="0" r="2.2"/>
+            <circle id="peakPoint" class="svg-point" cx="0" cy="-13" r="2.2"/>
+            <text id="textW2" class="svg-label" x="0" y="15" text-anchor="middle"></text>
+            <text id="textH" class="svg-label svg-label-warm" x="5" y="-6"></text>
+          </svg>
+        </div>
+        <div class="diagram-legend" aria-label="Çizim açıklaması">
+          <span class="legend-item"><span class="legend-line"></span>Yay</span>
+          <span class="legend-item"><span class="legend-line chord"></span>Kiriş (W)</span>
+          <span class="legend-item"><span class="legend-line height"></span>Sehim (H)</span>
+        </div>
+        <p class="caption" id="surfaceCaption" aria-live="polite"></p>
 
-<script>
-let mode = 'fwd';      // 'fwd' = W,H -> R   |   'rev' = R,W -> H
-let surface = 'ic';    // 'ic' = ölçülen yüzey iç   |   'dis' = ölçülen yüzey dış
+        <div class="warning" id="warnBox" role="alert"></div>
 
-function setMode(m){
-  mode = m;
-  document.getElementById('modeBtnFwd').classList.toggle('active', m === 'fwd');
-  document.getElementById('modeBtnRev').classList.toggle('active', m === 'rev');
-  document.getElementById('grpH').classList.toggle('hidden', m === 'rev');
-  document.getElementById('grpR').classList.toggle('hidden', m === 'fwd');
-  hesapla();
-}
+        <div class="results-heading">
+          <h3>Hesaplanan sonuçlar</h3>
+          <span>mm cinsinden</span>
+        </div>
 
-function setSurface(s){
-  surface = s;
-  document.getElementById('surfBtnIc').classList.toggle('active', s === 'ic');
-  document.getElementById('surfBtnDis').classList.toggle('active', s === 'dis');
-  hesapla();
-}
+        <div class="result-feature-grid">
+          <div class="feature-result primary">
+            <span class="result-label">İç yarıçap (R<sub>iç</sub>)</span>
+            <strong class="result-value" id="outRic">—</strong>
+          </div>
+          <div class="feature-result primary">
+            <span class="result-label">Dış yarıçap (R<sub>dış</sub>)</span>
+            <strong class="result-value" id="outRdis">—</strong>
+          </div>
+        </div>
 
-function fmt(n){
-  if (!isFinite(n)) return '-';
-  return n.toFixed(2) + ' mm';
-}
+        <div class="metric-grid">
+          <div class="metric-result"><span class="result-label">İç / dış çap</span><strong class="result-value" id="outD">—</strong></div>
+          <div class="metric-result"><span class="result-label">Genişlik / yükseklik</span><strong class="result-value" id="outWH">—</strong></div>
+          <div class="metric-result"><span class="result-label">Merkez açısı (θ)</span><strong class="result-value" id="outAngle">—</strong></div>
+          <div class="metric-result"><span class="result-label">Yay uzunluğu (L)</span><strong class="result-value" id="outArcLen">—</strong></div>
+        </div>
 
-function hesapla(){
-  const W = parseFloat(document.getElementById('width').value);
-  let H, R;
-  const warnBox = document.getElementById('warnBox');
-  warnBox.classList.remove('show');
-  warnBox.textContent = '';
+        <button class="copy-btn" id="copyBtn" type="button" onclick="copySonuc()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="8" y="8" width="11" height="12" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h2" stroke="currentColor" stroke-width="1.8"/></svg>
+          <span>Sonuçları kopyala</span>
+        </button>
 
-  if (mode === 'fwd'){
-    H = parseFloat(document.getElementById('height').value);
-    if (isNaN(W) || isNaN(H) || W <= 0 || H <= 0){
-      clearResults();
-      return;
+        <details class="help">
+          <summary>Nasıl kullanılır?</summary>
+          <div class="help-body">
+            <p><strong>Temel kavramlar:</strong> <code>W</code>, yayın iki ucu arasındaki düz mesafedir. <code>H</code>, kirişin ortasından kavisin en derin noktasına olan sehim mesafesidir. <code>R</code> ise yarıçaptır.</p>
+            <p><strong>W, H → R:</strong> Elinizde genişlik ve yükseklik ölçümü varsa bu modu kullanın. <strong>R, W → H:</strong> Yarıçapı zaten biliyorsanız ve belirli bir genişlikteki sehimi bulmak istiyorsanız bu modu seçin.</p>
+            <p><strong>Kalınlık ve yüzey:</strong> Et kalınlığı olan bir parçayı iç veya dış yüzeyden ölçüyorsanız kalınlığı girin. Araç, iki yüzeyin yarıçapını ayrı ayrı hesaplar.</p>
+          </div>
+        </details>
+      </section>
+    </section>
+
+    <footer>Radius Ölçer · Atölye, tasarım ve 3D baskı ölçümleri için pratik hesaplama aracı</footer>
+  </main>
+
+  <script>
+    let mode = 'fwd';
+    let surface = 'ic';
+
+    const $ = (id) => document.getElementById(id);
+
+    function setMode(nextMode) {
+      mode = nextMode;
+      $('modeBtnFwd').classList.toggle('active', mode === 'fwd');
+      $('modeBtnRev').classList.toggle('active', mode === 'rev');
+      $('modeBtnFwd').setAttribute('aria-pressed', mode === 'fwd');
+      $('modeBtnRev').setAttribute('aria-pressed', mode === 'rev');
+      $('grpH').classList.toggle('hidden', mode === 'rev');
+      $('grpR').classList.toggle('hidden', mode === 'fwd');
+      $('modeNote').querySelector('span').textContent = mode === 'fwd'
+        ? 'Genişlik ve sehim yüksekliğini girin; yay yarıçapını otomatik hesaplayalım.'
+        : 'Bilinen yarıçap ve genişliği girin; bu yay için sehim yüksekliğini bulalım.';
+      hesapla();
     }
-    R = ((W * W) / (8 * H)) + (H / 2);
-  } else {
-    R = parseFloat(document.getElementById('radiusIn').value);
-    if (isNaN(W) || isNaN(R) || W <= 0 || R <= 0){
-      clearResults();
-      return;
+
+    function setSurface(nextSurface) {
+      surface = nextSurface;
+      $('surfBtnIc').classList.toggle('active', surface === 'ic');
+      $('surfBtnDis').classList.toggle('active', surface === 'dis');
+      $('surfBtnIc').setAttribute('aria-pressed', surface === 'ic');
+      $('surfBtnDis').setAttribute('aria-pressed', surface === 'dis');
+      hesapla();
     }
-    const inner = R * R - (W / 2) * (W / 2);
-    if (inner < 0){
-      warnBox.textContent = 'Bu genişlik için yarıçap çok küçük. R en az W/2 olmalı.';
-      warnBox.classList.add('show');
-      clearResults();
-      return;
+
+    function fmt(value) {
+      return Number.isFinite(value) ? `${value.toFixed(2)} mm` : '—';
     }
-    H = R - Math.sqrt(inner);
-  }
 
-  if (H > R * 2){
-    // degenerate / not a valid shallow arc in this geometry
-    warnBox.textContent = 'Girilen değerler geçerli bir yay oluşturmuyor.';
-    warnBox.classList.add('show');
-    clearResults();
-    return;
-  }
+    function showWarning(message) {
+      $('warnBox').textContent = message;
+      $('warnBox').classList.add('show');
+    }
 
-  // central half-angle from sin(theta/2) = (W/2)/R  (ölçülen yüzey için)
-  const ratio = Math.min(1, (W / 2) / R);
-  const halfAngleRad = Math.asin(ratio);
-  const angleDeg = halfAngleRad * 2 * (180 / Math.PI);
-  const arcLen = R * (halfAngleRad * 2);
+    function clearResults() {
+      ['outRic', 'outRdis', 'outD', 'outWH', 'outAngle', 'outArcLen'].forEach((id) => { $(id).textContent = '—'; });
+      $('surfaceCaption').textContent = '';
+      $('arcPath').setAttribute('d', '');
+    }
 
-  // Kalınlık / iç-dış yüzey hesabı
-  const t = parseFloat(document.getElementById('thickness').value) || 0;
-  let R_ic, R_dis;
-  if (surface === 'ic'){
-    R_ic = R;
-    R_dis = R + t;
-  } else {
-    R_dis = R;
-    R_ic = R - t;
-  }
+    function hesapla() {
+      const W = parseFloat($('width').value);
+      const thickness = parseFloat($('thickness').value) || 0;
+      let H;
+      let R;
+      $('warnBox').classList.remove('show');
+      $('warnBox').textContent = '';
 
-  const captionEl = document.getElementById('surfaceCaption');
-  if (R_ic <= 0){
-    warnBox.textContent = 'Kalınlık, iç yarıçaptan büyük olamaz. Değerleri kontrol et.';
-    warnBox.classList.add('show');
-    clearResults();
-    return;
-  }
-  captionEl.textContent = t > 0
-    ? `Ölçülen: ${surface === 'ic' ? 'iç' : 'dış'} yüzey  ·  t = ${t.toFixed(2)} mm`
-    : `Ölçülen: ${surface === 'ic' ? 'iç' : 'dış'} yüzey`;
+      if (mode === 'fwd') {
+        H = parseFloat($('height').value);
+        if (!Number.isFinite(W) || !Number.isFinite(H) || W <= 0 || H <= 0) {
+          clearResults();
+          return;
+        }
+        R = ((W * W) / (8 * H)) + (H / 2);
+      } else {
+        R = parseFloat($('radiusIn').value);
+        if (!Number.isFinite(W) || !Number.isFinite(R) || W <= 0 || R <= 0) {
+          clearResults();
+          return;
+        }
+        const inner = (R * R) - ((W / 2) * (W / 2));
+        if (inner < 0) {
+          showWarning('Bu genişlik için yarıçap çok küçük. R en az W/2 olmalıdır.');
+          clearResults();
+          return;
+        }
+        H = R - Math.sqrt(inner);
+      }
 
-  document.getElementById('outRic').innerText = fmt(R_ic);
-  document.getElementById('outRdis').innerText = fmt(R_dis);
-  document.getElementById('outD').innerText = `${(2*R_ic).toFixed(2)} / ${(2*R_dis).toFixed(2)} mm`;
-  document.getElementById('outWH').innerText = `${W.toFixed(2)} / ${H.toFixed(2)} mm`;
-  document.getElementById('outAngle').innerText = angleDeg.toFixed(2) + '°';
-  document.getElementById('outArcLen').innerText = fmt(arcLen);
+      if (!Number.isFinite(thickness) || thickness < 0 || H > R * 2) {
+        showWarning('Girilen değerler geçerli bir yay oluşturmuyor. Lütfen ölçüleri kontrol edin.');
+        clearResults();
+        return;
+      }
 
-  drawSvg(W, H, R);
-}
+      const ratio = Math.min(1, (W / 2) / R);
+      const halfAngleRad = Math.asin(ratio);
+      const angleDeg = halfAngleRad * 2 * (180 / Math.PI);
+      const arcLen = R * (halfAngleRad * 2);
+      let Rinner;
+      let Router;
 
-function clearResults(){
-  ['outRic','outRdis','outD','outWH','outAngle','outArcLen'].forEach(id => {
-    document.getElementById(id).innerText = '-';
-  });
-  document.getElementById('surfaceCaption').textContent = '';
-}
+      if (surface === 'ic') {
+        Rinner = R;
+        Router = R + thickness;
+      } else {
+        Router = R;
+        Rinner = R - thickness;
+      }
 
-function drawSvg(W, H, R){
-  const svg = document.getElementById('previewSvg');
-  const arcPath = document.getElementById('arcPath');
-  const chordLine = document.getElementById('chordLine');
-  const heightLine = document.getElementById('heightLine');
-  const textW2 = document.getElementById('textW2');
-  const textH = document.getElementById('textH');
+      if (Rinner <= 0) {
+        showWarning('Kalınlık, iç yarıçaptan büyük olamaz. Değerleri kontrol edin.');
+        clearResults();
+        return;
+      }
 
-  const largeArcFlag = (H > W / 2) ? 1 : 0;
+      $('surfaceCaption').textContent = thickness > 0
+        ? `Ölçülen: ${surface === 'ic' ? 'iç' : 'dış'} yüzey · t = ${thickness.toFixed(2)} mm`
+        : `Ölçülen: ${surface === 'ic' ? 'iç' : 'dış'} yüzey`;
+      $('outRic').textContent = fmt(Rinner);
+      $('outRdis').textContent = fmt(Router);
+      $('outD').textContent = `${(2 * Rinner).toFixed(2)} / ${(2 * Router).toFixed(2)} mm`;
+      $('outWH').textContent = `${W.toFixed(2)} / ${H.toFixed(2)} mm`;
+      $('outAngle').textContent = `${angleDeg.toFixed(2)}°`;
+      $('outArcLen').textContent = fmt(arcLen);
+      drawSvg(W, H, R);
+    }
 
-  arcPath.setAttribute('d', `M ${-W/2} 0 A ${R} ${R} 0 ${largeArcFlag} 1 ${W/2} 0`);
-  chordLine.setAttribute('x1', -W/2);
-  chordLine.setAttribute('x2', W/2);
-  heightLine.setAttribute('y2', -H);
+    function drawSvg(W, H, R) {
+      const svg = $('previewSvg');
+      const arcPath = $('arcPath');
+      const chordLine = $('chordLine');
+      const heightLine = $('heightLine');
+      const textW = $('textW2');
+      const textH = $('textH');
+      const leftPoint = $('leftPoint');
+      const rightPoint = $('rightPoint');
+      const peakPoint = $('peakPoint');
+      const largeArcFlag = H > W / 2 ? 1 : 0;
+      const baseScale = Math.max(W, H);
+      const fontSize = Math.max(baseScale * .072, 3.6);
+      const strokeWidth = Math.max(baseScale * .014, 1.2);
+      const padding = baseScale * .23;
+      const minX = H > R ? -R : -W / 2;
+      const maxX = H > R ? R : W / 2;
+      const minY = -H;
 
-  const baseScale = Math.max(W, H);
-  const fontS = baseScale * 0.07;
-  const strokeW = baseScale * 0.015;
+      arcPath.setAttribute('d', `M ${-W / 2} 0 A ${R} ${R} 0 ${largeArcFlag} 1 ${W / 2} 0`);
+      chordLine.setAttribute('x1', -W / 2);
+      chordLine.setAttribute('x2', W / 2);
+      heightLine.setAttribute('y2', -H);
+      leftPoint.setAttribute('cx', -W / 2);
+      rightPoint.setAttribute('cx', W / 2);
+      peakPoint.setAttribute('cy', -H);
+      textW.textContent = `W  ${W.toFixed(1)} mm`;
+      textW.setAttribute('y', fontSize * 1.65);
+      textW.setAttribute('font-size', fontSize);
+      textH.textContent = `H  ${H.toFixed(1)} mm`;
+      textH.setAttribute('x', fontSize * .45);
+      textH.setAttribute('y', -H / 2 + fontSize * .35);
+      textH.setAttribute('font-size', fontSize);
+      arcPath.setAttribute('stroke-width', strokeWidth * 1.6);
+      chordLine.setAttribute('stroke-width', strokeWidth);
+      heightLine.setAttribute('stroke-width', strokeWidth);
+      svg.setAttribute('viewBox', `${minX - padding} ${minY - padding} ${(maxX - minX) + (padding * 2)} ${H + (fontSize * 2.8) + (padding * 2)}`);
+    }
 
-  textW2.textContent = `W: ${W.toFixed(1)} mm`;
-  textW2.setAttribute('y', fontS * 1.5);
-  textW2.setAttribute('font-size', fontS);
+    async function copySonuc() {
+      const values = {
+        ric: $('outRic').textContent,
+        rdis: $('outRdis').textContent,
+        d: $('outD').textContent,
+        wh: $('outWH').textContent,
+        angle: $('outAngle').textContent,
+        arcLen: $('outArcLen').textContent
+      };
+      const text = [
+        `İç yarıçap (R_iç): ${values.ric}`,
+        `Dış yarıçap (R_dış): ${values.rdis}`,
+        `İç / dış çap: ${values.d}`,
+        `Genişlik / yükseklik: ${values.wh}`,
+        `Merkez açısı: ${values.angle}`,
+        `Yay uzunluğu: ${values.arcLen}`
+      ].join('\n');
+      const button = $('copyBtn');
+      const label = button.querySelector('span');
+      try {
+        await navigator.clipboard.writeText(text);
+        label.textContent = 'Kopyalandı';
+        button.classList.add('copied');
+        setTimeout(() => { label.textContent = 'Sonuçları kopyala'; button.classList.remove('copied'); }, 1600);
+      } catch (error) {
+        label.textContent = 'Kopyalama başarısız';
+        setTimeout(() => { label.textContent = 'Sonuçları kopyala'; }, 1600);
+      }
+    }
 
-  textH.textContent = `H: ${H.toFixed(1)} mm`;
-  textH.setAttribute('x', fontS * 0.3);
-  textH.setAttribute('y', -H/2 + fontS * 0.3);
-  textH.setAttribute('font-size', fontS);
-
-  arcPath.setAttribute('stroke-width', strokeW * 1.5);
-  chordLine.setAttribute('stroke-width', strokeW);
-  heightLine.setAttribute('stroke-width', strokeW);
-
-  const minX = (H > R) ? -R : -W/2;
-  const maxX = (H > R) ? R : W/2;
-  const minY = -H;
-
-  const pad = baseScale * 0.2;
-  const vMinX = minX - pad;
-  const vMinY = minY - pad;
-  const vWidth = (maxX - minX) + (2 * pad);
-  const vHeight = H + (fontS * 2.5) + (2 * pad);
-
-  svg.setAttribute('viewBox', `${vMinX} ${vMinY} ${vWidth} ${vHeight}`);
-}
-
-function copySonuc(){
-  const R = document.getElementById('outR').innerText;
-  const D = document.getElementById('outD').innerText;
-  const WH = document.getElementById('outWH').innerText;
-  const angle = document.getElementById('outAngle').innerText;
-  const arcLen = document.getElementById('outArcLen').innerText;
-  const text = `Yarıçap (R): ${R}\nÇap (D): ${D}\nGenişlik/Yükseklik: ${WH}\nMerkez Açısı: ${angle}\nYay Uzunluğu: ${arcLen}`;
-
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.getElementById('copyBtn');
-    const original = btn.textContent;
-    btn.textContent = 'Kopyalandı ✓';
-    btn.classList.add('copied');
-    setTimeout(() => {
-      btn.textContent = original;
-      btn.classList.remove('copied');
-    }, 1500);
-  });
-}
-
-hesapla();
-</script>
-
+    hesapla();
+  </script>
 </body>
 </html>
