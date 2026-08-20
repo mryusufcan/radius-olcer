@@ -6,6 +6,15 @@
   <meta name="theme-color" content="#0b1220">
   <meta name="description" content="Genişlik, yükseklik ve yarıçap değerleriyle hızlı yay hesaplama aracı.">
   <title>Radius Ölçer — Yay yarıçapı hesaplayıcı</title>
+  <script>
+    (function () {
+      try {
+        const savedTheme = localStorage.getItem('radius-olcer-theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) document.documentElement.classList.add('dark-theme');
+      } catch (error) { /* Tema tercihi okunamazsa açık tema kullanılır. */ }
+    }());
+  </script>
   <style>
     :root {
       --ink: #102033;
@@ -26,6 +35,9 @@
       --amber-soft: #fff6df;
       --green: #059669;
       --green-soft: #eafaf4;
+      --theme-control-bg: rgba(255,255,255,.06);
+      --theme-control-border: rgba(148, 163, 184, .22);
+      --theme-control-ink: #c8d5e3;
       --shadow-lg: 0 28px 80px rgba(5, 15, 30, .22);
       --shadow-md: 0 12px 34px rgba(20, 43, 72, .09);
       --radius-lg: 24px;
@@ -137,6 +149,35 @@
       background: #34d399;
       box-shadow: 0 0 0 4px rgba(52, 211, 153, .13);
     }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .theme-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 36px;
+      padding: 8px 11px;
+      border: 1px solid var(--theme-control-border);
+      border-radius: 999px;
+      color: var(--theme-control-ink);
+      background: var(--theme-control-bg);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 800;
+      transition: background .18s ease, border-color .18s ease, transform .18s ease;
+    }
+
+    .theme-toggle:hover { border-color: rgba(147, 197, 253, .55); background: rgba(255,255,255,.12); }
+    .theme-toggle:active { transform: scale(.97); }
+    .theme-toggle:focus-visible { outline: 3px solid rgba(147, 197, 253, .28); outline-offset: 2px; }
+    .theme-icon { width: 15px; height: 15px; }
+    .theme-icon.hidden { display: none; }
 
     .hero { max-width: 780px; margin-bottom: 28px; color: #fff; }
 
@@ -381,6 +422,48 @@
 
     .live-badge::before { width: 6px; height: 6px; content: ""; border-radius: 50%; background: var(--blue); box-shadow: 0 0 0 3px #dbeafe; }
 
+    .preview-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: -4px 0 12px;
+    }
+
+    .preview-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .preview-status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 3px rgba(5, 150, 105, .12);
+    }
+
+    .reset-btn {
+      min-height: 30px;
+      padding: 5px 9px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 800;
+      transition: color .18s ease, border-color .18s ease, background .18s ease, transform .18s ease;
+    }
+
+    .reset-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-soft); }
+    .reset-btn:active { transform: scale(.97); }
+    .reset-btn:focus-visible { outline: 3px solid rgba(37, 99, 235, .2); outline-offset: 2px; }
+
     .preview-box {
       position: relative;
       min-height: 330px;
@@ -534,6 +617,65 @@
 
     footer { padding: 22px 2px 0; color: #71849a; font-size: 11px; text-align: center; }
 
+    html.dark-theme {
+      color-scheme: dark;
+      --ink: #e5edf7;
+      --ink-soft: #c2d1e1;
+      --muted: #9aacbf;
+      --muted-light: #7f94ab;
+      --surface: #0f1928;
+      --panel: #121f31;
+      --panel-soft: #192b40;
+      --line: #293d54;
+      --line-strong: #3a526c;
+      --navy: #070d18;
+      --navy-soft: #0d1726;
+      --blue-soft: #122b51;
+      --amber-soft: #3b2b0d;
+      --green-soft: #0d3328;
+      --theme-control-bg: rgba(255,255,255,.09);
+      --theme-control-border: rgba(148, 163, 184, .32);
+      --theme-control-ink: #dce8f5;
+    }
+
+    html.dark-theme body::before { opacity: .28; }
+    html.dark-theme .workspace { border-color: #2b4159; background: var(--surface); }
+    html.dark-theme .control-panel { background: var(--panel); }
+    html.dark-theme .visual-panel { background: linear-gradient(145deg, #152437, #0f1b2b); }
+    html.dark-theme h2, html.dark-theme .results-heading h3 { color: var(--ink); }
+    html.dark-theme .section-copy, html.dark-theme .surface-hint, html.dark-theme .preview-status, html.dark-theme .diagram-legend, html.dark-theme .caption { color: var(--muted); }
+    html.dark-theme .mode-switch, html.dark-theme .surface-switch { border-color: var(--line); background: var(--panel-soft); }
+    html.dark-theme .mode-switch button, html.dark-theme .surface-switch button { color: var(--muted); }
+    html.dark-theme .input-unit { color: var(--muted-light); }
+    html.dark-theme input { border-color: var(--line); color: var(--ink); background: #0d1929; }
+    html.dark-theme input:hover { border-color: var(--line-strong); }
+    html.dark-theme input:focus { border-color: #60a5fa; background: #122137; box-shadow: 0 0 0 4px rgba(96, 165, 250, .14); }
+    html.dark-theme .control-divider, html.dark-theme .help { border-color: var(--line); background: transparent; }
+    html.dark-theme .quick-tip { border-color: #294d80; color: #c4d8f1; background: #12284b; }
+    html.dark-theme .live-badge { border-color: #315a92; color: #b8d3f5; background: #15263d; }
+    html.dark-theme .live-badge::before { background: #60a5fa; box-shadow: 0 0 0 3px rgba(96, 165, 250, .18); }
+    html.dark-theme .reset-btn { border-color: var(--line); color: var(--muted); }
+    html.dark-theme .reset-btn:hover { border-color: #60a5fa; color: #bfdbfe; background: #12284b; }
+    html.dark-theme .preview-box {
+      border-color: #2b425a;
+      background:
+        linear-gradient(rgba(148,163,184,.10) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148,163,184,.10) 1px, transparent 1px),
+        #101d2e;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+    }
+    html.dark-theme .svg-label { fill: #c8d7e7; }
+    html.dark-theme .svg-label-warm { fill: #fbbf24; }
+    html.dark-theme .svg-point { fill: #13233a; stroke: #60a5fa; }
+    html.dark-theme .feature-result, html.dark-theme .metric-result { border-color: #2c435c; background: #142438; }
+    html.dark-theme .feature-result.primary { border-color: #315b9f; background: linear-gradient(145deg, #142b4d, #12223a); }
+    html.dark-theme .feature-result .result-value { color: #93c5fd; }
+    html.dark-theme .metric-result .result-value { color: var(--ink); }
+    html.dark-theme .warning { border-color: #76551d; color: #f6c965; background: #38280e; }
+    html.dark-theme .help summary { color: var(--ink-soft); }
+    html.dark-theme .help-body code { border-color: #31506f; color: #bfdbfe; background: #162e50; }
+    html.dark-theme footer { color: #7189a3; }
+
     @media (max-width: 900px) {
       .workspace { grid-template-columns: 1fr; }
       .control-panel { border-bottom: 1px solid var(--line); }
@@ -568,8 +710,7 @@
       <a class="brand" href="./" aria-label="Radius Ölçer ana sayfa">
         <span class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none">
-            <path d="M7.25 4.75A2.75 2.75 0 0 1 10 2h4a2.75 2.75 0 0 1 2.75 2.75V21l-4.75-3.35L7.25 21V4.75Z" fill="white"/>
-            <path d="M10 7.4h4M10 10.5h4" stroke="#2563eb" stroke-width="1.45" stroke-linecap="round"/>
+            <path d="M12 20.1S4.6 15.8 4.6 9.8a4.1 4.1 0 0 1 7.4-2.4 4.1 4.1 0 0 1 7.4 2.4c0 6-7.4 10.3-7.4 10.3Z" fill="white" stroke="#bfdbfe" stroke-width="1.15" stroke-linejoin="round"/>
           </svg>
         </span>
         <span>
@@ -577,7 +718,14 @@
           <span class="brand-subtitle">Teknik ölçüm aracı</span>
         </span>
       </a>
-      <div class="status-pill"><span class="status-dot"></span>Canlı hesaplama</div>
+      <div class="topbar-actions">
+        <div class="status-pill"><span class="status-dot"></span>Canlı hesaplama</div>
+        <button class="theme-toggle" id="themeToggle" type="button" aria-pressed="false" title="Koyu temayı aç" onclick="toggleTheme()">
+          <svg class="theme-icon" id="themeIconMoon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20.2 15.4A8.6 8.6 0 0 1 8.6 3.8 8.6 8.6 0 1 0 20.2 15.4Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="theme-icon hidden" id="themeIconSun" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v2M12 19.5v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2.5 12h2M19.5 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span class="theme-toggle-label">Koyu tema</span>
+        </button>
+      </div>
     </header>
 
     <section class="hero" aria-labelledby="page-title">
@@ -605,22 +753,22 @@
         <div class="input-row">
           <div class="input-group">
             <label for="width"><span>Genişlik (W)</span><span class="unit-label">milimetre</span></label>
-            <div class="input-wrap"><input type="number" id="width" value="100" min="0.1" step="0.1" oninput="hesapla()"><span class="input-unit">mm</span></div>
+            <div class="input-wrap"><input type="number" id="width" value="100" min="0.1" step="0.1" oninput="scheduleCalculation()"><span class="input-unit">mm</span></div>
           </div>
           <div class="input-group" id="grpH">
             <label for="height"><span>Yükseklik (H)</span><span class="unit-label">sehim</span></label>
-            <div class="input-wrap"><input type="number" id="height" value="13" min="0.01" step="0.1" oninput="hesapla()"><span class="input-unit">mm</span></div>
+            <div class="input-wrap"><input type="number" id="height" value="13" min="0.01" step="0.1" oninput="scheduleCalculation()"><span class="input-unit">mm</span></div>
           </div>
           <div class="input-group hidden" id="grpR">
             <label for="radiusIn"><span>Yarıçap (R)</span><span class="unit-label">bilinen değer</span></label>
-            <div class="input-wrap"><input type="number" id="radiusIn" value="200" min="0.1" step="0.1" oninput="hesapla()"><span class="input-unit">mm</span></div>
+            <div class="input-wrap"><input type="number" id="radiusIn" value="200" min="0.1" step="0.1" oninput="scheduleCalculation()"><span class="input-unit">mm</span></div>
           </div>
         </div>
 
         <div class="input-row">
           <div class="input-group">
             <label for="thickness"><span>Kalınlık (t)</span><span class="unit-label">opsiyonel</span></label>
-            <div class="input-wrap"><input type="number" id="thickness" value="0" min="0" step="0.1" oninput="hesapla()"><span class="input-unit">mm</span></div>
+            <div class="input-wrap"><input type="number" id="thickness" value="0" min="0" step="0.1" oninput="scheduleCalculation()"><span class="input-unit">mm</span></div>
           </div>
           <div class="input-group">
             <label class="surface-label"><span>Ölçülen yüzey</span><span class="unit-label">referans</span></label>
@@ -647,6 +795,11 @@
             <p>Geometri, girdiğiniz değerlere göre anlık olarak çizilir.</p>
           </div>
           <div class="live-badge">Anlık</div>
+        </div>
+
+        <div class="preview-toolbar">
+          <span class="preview-status"><span class="preview-status-dot"></span><span id="previewStatus">Tek karede güncellenir</span></span>
+          <button class="reset-btn" type="button" onclick="resetInputs()">Değerleri sıfırla</button>
         </div>
 
         <div class="preview-box" aria-label="Yay geometrisi önizlemesi">
@@ -720,6 +873,57 @@
 
     const $ = (id) => document.getElementById(id);
 
+    let calculationFrame = 0;
+    const themeKey = 'radius-olcer-theme';
+
+    function scheduleCalculation() {
+      if (calculationFrame) return;
+      calculationFrame = window.requestAnimationFrame(() => {
+        calculationFrame = 0;
+        hesapla();
+      });
+    }
+
+    function resetInputs() {
+      $('width').value = '100';
+      $('height').value = '13';
+      $('radiusIn').value = '200';
+      $('thickness').value = '0';
+      setMode('fwd');
+      setSurface('ic');
+      $('previewStatus').textContent = 'Varsayılan değerlere döndü';
+      setTimeout(() => { $('previewStatus').textContent = 'Tek karede güncellenir'; }, 1500);
+    }
+
+    function getStoredTheme() {
+      try {
+        const saved = localStorage.getItem(themeKey);
+        if (saved === 'light' || saved === 'dark') return saved;
+      } catch (error) { /* localStorage kullanılamazsa sistem tercihi okunur. */ }
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    function applyTheme(theme = getStoredTheme(), persist = true) {
+      const isDark = theme === 'dark';
+      document.documentElement.classList.toggle('dark-theme', isDark);
+      const toggle = $('themeToggle');
+      const label = toggle.querySelector('.theme-toggle-label');
+      toggle.setAttribute('aria-pressed', String(isDark));
+      toggle.title = isDark ? 'Açık temaya geç' : 'Koyu temayı aç';
+      label.textContent = isDark ? 'Açık tema' : 'Koyu tema';
+      $('themeIconMoon').classList.toggle('hidden', isDark);
+      $('themeIconSun').classList.toggle('hidden', !isDark);
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', isDark ? '#070d18' : '#0b1220');
+      if (persist) {
+        try { localStorage.setItem(themeKey, theme); } catch (error) { /* Tercih saklanamasa da tema çalışır. */ }
+      }
+    }
+
+    function toggleTheme() {
+      const nextTheme = document.documentElement.classList.contains('dark-theme') ? 'light' : 'dark';
+      applyTheme(nextTheme);
+    }
+
     function setMode(nextMode) {
       mode = nextMode;
       $('modeBtnFwd').classList.toggle('active', mode === 'fwd');
@@ -731,7 +935,7 @@
       $('modeNote').querySelector('span').textContent = mode === 'fwd'
         ? 'Genişlik ve sehim yüksekliğini girin; yay yarıçapını otomatik hesaplayalım.'
         : 'Bilinen yarıçap ve genişliği girin; bu yay için sehim yüksekliğini bulalım.';
-      hesapla();
+      scheduleCalculation();
     }
 
     function setSurface(nextSurface) {
@@ -740,7 +944,7 @@
       $('surfBtnDis').classList.toggle('active', surface === 'dis');
       $('surfBtnIc').setAttribute('aria-pressed', surface === 'ic');
       $('surfBtnDis').setAttribute('aria-pressed', surface === 'dis');
-      hesapla();
+      scheduleCalculation();
     }
 
     function fmt(value) {
@@ -896,7 +1100,8 @@
       }
     }
 
-    hesapla();
+    applyTheme(getStoredTheme(), false);
+    scheduleCalculation();
   </script>
 </body>
 </html>
