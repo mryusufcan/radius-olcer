@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#0b1220">
   <meta name="description" content="Genişlik, yükseklik ve yarıçap değerleriyle hızlı yay hesaplama aracı.">
   <title>Radius Ölçer — Yay yarıçapı hesaplayıcı</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
   <script>
     (function () {
       try {
@@ -38,6 +39,7 @@
       --theme-control-bg: rgba(255,255,255,.06);
       --theme-control-border: rgba(148, 163, 184, .22);
       --theme-control-ink: #c8d5e3;
+      --ease-out: cubic-bezier(.23, 1, .32, 1);
       --shadow-lg: 0 28px 80px rgba(5, 15, 30, .22);
       --shadow-md: 0 12px 34px rgba(20, 43, 72, .09);
       --radius-lg: 24px;
@@ -226,6 +228,58 @@
       background: var(--surface);
       box-shadow: var(--shadow-lg);
     }
+
+    .map-workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(290px, .65fr);
+      overflow: hidden;
+      margin-top: 22px;
+      border: 1px solid rgba(148, 163, 184, .3);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      box-shadow: var(--shadow-md);
+    }
+
+    .map-panel { min-width: 0; padding: clamp(22px, 3.5vw, 34px); background: var(--panel); }
+    .map-controls { padding: clamp(22px, 3.5vw, 34px); border-left: 1px solid var(--line); background: linear-gradient(145deg, var(--panel-soft), var(--panel)); }
+    .map-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+    .map-panel-head h2 { font-size: 20px; }
+    .map-panel-head p { margin: 7px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .map-badge { display: inline-flex; align-items: center; gap: 7px; padding: 8px 10px; border: 1px solid #cfe2ff; border-radius: 999px; color: var(--blue-dark); background: var(--panel); font-size: 10px; font-weight: 850; letter-spacing: .08em; white-space: nowrap; }
+    .map-badge::before { width: 7px; height: 7px; content: ""; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px rgba(5,150,105,.12); }
+    .map-canvas-wrap { position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: #dbeafe; box-shadow: inset 0 1px 0 rgba(255,255,255,.7); }
+    #radiusMap { width: 100%; height: 410px; min-height: 300px; }
+    .map-canvas-hint { position: absolute; z-index: 500; right: 12px; bottom: 12px; display: inline-flex; align-items: center; gap: 7px; max-width: calc(100% - 24px); padding: 8px 10px; border: 1px solid rgba(255,255,255,.72); border-radius: 9px; color: #1e3a5f; background: rgba(255,255,255,.88); box-shadow: 0 6px 16px rgba(15,23,42,.14); font-size: 11px; font-weight: 700; pointer-events: none; backdrop-filter: blur(7px); }
+    .map-canvas-hint svg { flex: 0 0 auto; color: var(--blue); }
+    .map-attribution-note { margin: 9px 1px 0; color: var(--muted-light); font-size: 10px; line-height: 1.4; }
+    .map-attribution-note a { color: var(--blue-dark); }
+    .map-field { margin-top: 22px; }
+    .map-field label { margin-bottom: 8px; }
+    .map-input-wrap { position: relative; }
+    .map-input { width: 100%; min-height: 52px; padding: 13px 50px 13px 15px; border: 1.5px solid var(--line); border-radius: 12px; color: var(--ink); background: var(--panel); outline: none; font-family: var(--mono); font-size: 17px; font-weight: 750; transition: border-color .18s ease, box-shadow .18s ease, background .18s ease; }
+    .map-input:focus { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(37,99,235,.11); }
+    .map-input-unit { position: absolute; top: 50%; right: 15px; color: var(--muted-light); font-family: var(--mono); font-size: 11px; font-weight: 800; pointer-events: none; transform: translateY(-50%); }
+    .map-range-hint { display: flex; justify-content: space-between; margin-top: 7px; color: var(--muted-light); font-size: 10px; }
+    .map-readout-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 17px; }
+    .map-readout { min-height: 74px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+    .map-readout-label { display: block; color: var(--muted); font-size: 10px; font-weight: 800; }
+    .map-readout-value { display: block; margin-top: 9px; color: var(--ink); font-family: var(--mono); font-size: 12px; font-weight: 800; line-height: 1.35; }
+    .map-readout-value.updated { animation: valueFlash .36s var(--ease-out); }
+    .map-instruction { display: flex; gap: 9px; margin-top: 16px; padding: 12px 13px; border: 1px solid #d8e5ff; border-radius: 12px; color: #36527a; background: var(--blue-soft); font-size: 11px; line-height: 1.55; }
+    .map-instruction svg { flex: 0 0 auto; color: var(--blue); }
+    .map-actions { display: flex; gap: 9px; margin-top: 17px; }
+    .map-reset-btn { flex: 1; min-height: 42px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink-soft); background: var(--panel); cursor: pointer; font-size: 11px; font-weight: 800; transition: border-color .18s ease, color .18s ease, background .18s ease, transform .18s ease; }
+    .map-reset-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-soft); }
+    .map-reset-btn:active { transform: scale(.97); }
+    .map-reset-btn:focus-visible { outline: 3px solid rgba(37,99,235,.2); outline-offset: 2px; }
+    .leaflet-container { color: #1e293b; font-family: var(--sans); }
+    .leaflet-control-zoom a, .leaflet-control-attribution { border-color: rgba(148,163,184,.32) !important; color: #475569; background: rgba(255,255,255,.9); }
+    .leaflet-control-zoom a:hover { color: var(--blue); background: #fff; }
+    .leaflet-control-attribution a { color: var(--blue-dark); }
+    .radius-marker-icon, .radius-handle-icon { display: grid; place-items: center; background: transparent; border: 0; }
+    .radius-marker-dot { width: 18px; height: 18px; border: 3px solid #fff; border-radius: 50%; background: var(--blue); box-shadow: 0 3px 12px rgba(15,23,42,.3), 0 0 0 4px rgba(37,99,235,.22); }
+    .radius-handle-dot { width: 16px; height: 16px; border: 3px solid #fff; border-radius: 50%; background: #0ea5e9; box-shadow: 0 3px 12px rgba(15,23,42,.3), 0 0 0 4px rgba(14,165,233,.24); }
+    .leaflet-marker-icon { transition: filter .18s ease; }
 
     .control-panel { padding: clamp(24px, 4vw, 42px); background: var(--panel); }
     .visual-panel { padding: clamp(24px, 4vw, 42px); background: linear-gradient(145deg, #f5f8fc, #edf3f9); }
@@ -559,6 +613,7 @@
     .feature-result.primary { border-color: #c7dafe; background: linear-gradient(145deg, #f7faff, #edf4ff); }
     .result-label { color: var(--muted); font-size: 11px; line-height: 1.35; }
     .feature-result .result-value { display: block; margin-top: 10px; color: var(--blue-dark); font-family: var(--mono); font-size: 19px; font-weight: 800; letter-spacing: -.04em; }
+    .feature-result .result-value.updated { animation: valueFlash .36s var(--ease-out); }
 
     .metric-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
     .metric-result { display: flex; min-height: 68px; flex-direction: column; justify-content: space-between; padding: 12px 14px; border-radius: 12px; }
@@ -639,8 +694,23 @@
     }
 
     html.dark-theme body::before { opacity: .28; }
-    html.dark-theme .workspace { border-color: #2b4159; background: var(--surface); }
-    html.dark-theme .control-panel { background: var(--panel); }
+    html.dark-theme .workspace, html.dark-theme .map-workspace { border-color: #2b4159; background: var(--surface); }
+    html.dark-theme .control-panel, html.dark-theme .map-panel { background: var(--panel); }
+    html.dark-theme .map-controls { border-color: var(--line); background: linear-gradient(145deg, #192b40, #121f31); }
+    html.dark-theme .map-badge { border-color: #315a92; color: #b8d3f5; background: #15263d; }
+    html.dark-theme .map-canvas-wrap { border-color: #2b425a; background: #101d2e; }
+    html.dark-theme .map-canvas-hint { border-color: rgba(96,165,250,.35); color: #dbeafe; background: rgba(15,30,49,.9); }
+    html.dark-theme .map-attribution-note a { color: #93c5fd; }
+    html.dark-theme .map-input { border-color: var(--line); color: var(--ink); background: #0d1929; }
+    html.dark-theme .map-input:focus { border-color: #60a5fa; background: #122137; box-shadow: 0 0 0 4px rgba(96,165,250,.14); }
+    html.dark-theme .map-readout { border-color: #2c435c; background: #142438; }
+    html.dark-theme .map-instruction { border-color: #294d80; color: #c4d8f1; background: #12284b; }
+    html.dark-theme .map-reset-btn { border-color: var(--line); color: var(--ink-soft); background: #142438; }
+    html.dark-theme .map-reset-btn:hover { border-color: #60a5fa; color: #bfdbfe; background: #12284b; }
+    html.dark-theme .leaflet-tile-pane { filter: brightness(.68) saturate(.82) contrast(1.04); }
+    html.dark-theme .leaflet-control-zoom a, html.dark-theme .leaflet-control-attribution { border-color: rgba(148,163,184,.24) !important; color: #cbd5e1; background: rgba(15,30,49,.92); }
+    html.dark-theme .leaflet-control-zoom a:hover { color: #93c5fd; background: #1b3452; }
+    html.dark-theme .leaflet-control-attribution a { color: #93c5fd; }
     html.dark-theme .visual-panel { background: linear-gradient(145deg, #152437, #0f1b2b); }
     html.dark-theme h2, html.dark-theme .results-heading h3 { color: var(--ink); }
     html.dark-theme .section-copy, html.dark-theme .surface-hint, html.dark-theme .preview-status, html.dark-theme .diagram-legend, html.dark-theme .caption { color: var(--muted); }
@@ -676,9 +746,24 @@
     html.dark-theme .help-body code { border-color: #31506f; color: #bfdbfe; background: #162e50; }
     html.dark-theme footer { color: #7189a3; }
 
+    @keyframes panelRise {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes valueFlash {
+      0% { opacity: .5; transform: translateY(2px) scale(.985); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .workspace, .map-workspace { animation: panelRise .58s var(--ease-out) both; }
+      .map-workspace { animation-delay: .09s; }
+    }
+
     @media (max-width: 900px) {
-      .workspace { grid-template-columns: 1fr; }
+      .workspace, .map-workspace { grid-template-columns: 1fr; }
       .control-panel { border-bottom: 1px solid var(--line); }
+      .map-controls { border-top: 1px solid var(--line); border-left: 0; }
+      #radiusMap { height: 360px; }
       .visual-panel { padding-top: 30px; }
     }
 
@@ -693,6 +778,10 @@
       .input-row { grid-template-columns: 1fr; gap: 16px; }
       .preview-box { min-height: 260px; }
       #previewSvg { max-height: 270px; }
+      .map-panel-head { align-items: center; }
+      #radiusMap { height: 300px; }
+      .map-readout-grid { grid-template-columns: 1fr; }
+      .map-canvas-hint { right: 9px; bottom: 9px; font-size: 10px; }
       .visual-head { align-items: center; }
       .live-badge { padding: 7px 9px; font-size: 9px; }
       .result-feature-grid, .metric-grid { grid-template-columns: 1fr; }
@@ -864,9 +953,50 @@
       </section>
     </section>
 
+    <section class="map-workspace" aria-labelledby="map-title">
+      <section class="map-panel">
+        <div class="map-panel-head">
+          <div>
+            <p class="section-kicker">03 / Haritada ölç</p>
+            <h2 id="map-title">Gerçek harita üzerinde yarıçap</h2>
+            <p>Merkezi taşıyın veya mavi tutamacı sürükleyerek çevreyi ayarlayın.</p>
+          </div>
+          <div class="map-badge">Canlı harita</div>
+        </div>
+        <div class="map-canvas-wrap">
+          <div id="radiusMap" role="application" aria-label="Sürüklenebilir coğrafi yarıçap haritası"></div>
+          <div class="map-canvas-hint">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Haritaya tıklayın veya mavi noktayı sürükleyin</span>
+          </div>
+        </div>
+        <p class="map-attribution-note">Harita verisi <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> katkıcılarına aittir.</p>
+      </section>
+      <aside class="map-controls" aria-labelledby="map-controls-title">
+        <p class="section-kicker">04 / Değeri ayarla</p>
+        <h2 id="map-controls-title">Yarıçap çizimi</h2>
+        <p class="section-copy">Merkez ve yarıçapı değiştirin; harita üzerindeki alan anında güncellensin.</p>
+        <div class="map-field">
+          <label for="mapRadius"><span>Yarıçap</span><span class="unit-label">coğrafi mesafe</span></label>
+          <div class="map-input-wrap"><input class="map-input" id="mapRadius" type="number" value="5000" min="100" max="500000" step="100" oninput="scheduleMapUpdate()" onchange="normalizeMapRadiusInput()"><span class="map-input-unit">m</span></div>
+          <div class="map-range-hint"><span>100 m</span><span>500 km</span></div>
+        </div>
+        <div class="map-readout-grid">
+          <div class="map-readout"><span class="map-readout-label">Merkez koordinatı</span><strong class="map-readout-value" id="mapCenterText">39.0000, 35.0000</strong></div>
+          <div class="map-readout"><span class="map-readout-label">Çevre uzunluğu</span><strong class="map-readout-value" id="mapCircumferenceText">31.42 km</strong></div>
+        </div>
+        <div class="map-instruction">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5a6.5 6.5 0 0 0-3.7 11.84c.65.47 1.1 1.23 1.1 2.04h5.2c0-.81.45-1.57 1.1-2.04A6.5 6.5 0 0 0 12 3.5Z" stroke="currentColor" stroke-width="1.8"/><path d="M9.8 20h4.4M10 17.5h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span><strong>Kullanım:</strong> Dolu işaret merkezdir. Mavi dış noktayı sürükleyerek yarıçapı metre cinsinden ayarlayın.</span>
+        </div>
+        <div class="map-actions"><button class="map-reset-btn" type="button" onclick="resetMap()">Haritayı sıfırla</button></div>
+      </aside>
+    </section>
+
     <footer>Radius Ölçer · Atölye, tasarım ve 3D baskı ölçümleri için pratik hesaplama aracı</footer>
   </main>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script>
     let mode = 'fwd';
     let surface = 'ic';
@@ -874,7 +1004,18 @@
     const $ = (id) => document.getElementById(id);
 
     let calculationFrame = 0;
+    let mapUpdateFrame = 0;
+    let radiusMap;
+    let mapCenterMarker;
+    let mapRadiusCircle;
+    let mapRadiusHandle;
+    let mapCenter = null;
+    let mapRadiusMeters = 5000;
     const themeKey = 'radius-olcer-theme';
+    const defaultMapCenter = [39.0000, 35.0000];
+    const defaultMapZoom = 5;
+    const mapRadiusMin = 100;
+    const mapRadiusMax = 500000;
 
     function scheduleCalculation() {
       if (calculationFrame) return;
@@ -882,6 +1023,111 @@
         calculationFrame = 0;
         hesapla();
       });
+    }
+
+    function scheduleMapUpdate() {
+      if (mapUpdateFrame) return;
+      mapUpdateFrame = window.requestAnimationFrame(() => {
+        mapUpdateFrame = 0;
+        updateMapRadiusFromInput();
+      });
+    }
+
+    function formatMapDistance(meters) {
+      return meters >= 1000 ? `${(meters / 1000).toFixed(meters >= 10000 ? 0 : 2)} km` : `${Math.round(meters)} m`;
+    }
+
+    function formatMapCoordinate(latlng) {
+      return `${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`;
+    }
+
+    function clampMapRadius(value) {
+      return Math.min(mapRadiusMax, Math.max(mapRadiusMin, Number.isFinite(value) ? value : mapRadiusMeters));
+    }
+
+    function getMapHandleLatLng(center, meters) {
+      const earthRadius = 6378137;
+      const deltaLng = (meters / (earthRadius * Math.cos(center.lat * Math.PI / 180))) * 180 / Math.PI;
+      return L.latLng(center.lat, center.lng + deltaLng);
+    }
+
+    function pulseValue(id) {
+      const element = $(id);
+      element.classList.remove('updated');
+      void element.offsetWidth;
+      element.classList.add('updated');
+    }
+
+    function updateMapReadout() {
+      if (!mapCenter) return;
+      $('mapCenterText').textContent = formatMapCoordinate(mapCenter);
+      $('mapCircumferenceText').textContent = formatMapDistance(2 * Math.PI * mapRadiusMeters);
+      pulseValue('mapCenterText');
+      pulseValue('mapCircumferenceText');
+    }
+
+    function updateMapGeometry(repositionHandle = true) {
+      if (!radiusMap || !mapCenterMarker || !mapRadiusCircle || !mapRadiusHandle) return;
+      mapCenter = mapCenterMarker.getLatLng();
+      mapRadiusCircle.setLatLng(mapCenter).setRadius(mapRadiusMeters);
+      if (repositionHandle) mapRadiusHandle.setLatLng(getMapHandleLatLng(mapCenter, mapRadiusMeters));
+      updateMapReadout();
+    }
+
+    function updateMapRadiusFromInput() {
+      const rawValue = parseFloat($('mapRadius').value);
+      if (!Number.isFinite(rawValue)) return;
+      mapRadiusMeters = clampMapRadius(rawValue);
+      updateMapGeometry(true);
+    }
+
+    function normalizeMapRadiusInput() {
+      const rawValue = parseFloat($('mapRadius').value);
+      mapRadiusMeters = clampMapRadius(rawValue);
+      $('mapRadius').value = Math.round(mapRadiusMeters);
+      updateMapGeometry(true);
+    }
+
+    function setMapRadiusFromDrag(latlng) {
+      if (!radiusMap || !mapCenterMarker) return;
+      const center = mapCenterMarker.getLatLng();
+      mapRadiusMeters = clampMapRadius(radiusMap.distance(center, latlng));
+      $('mapRadius').value = Math.round(mapRadiusMeters);
+      mapCenter = center;
+      mapRadiusCircle.setLatLng(center).setRadius(mapRadiusMeters);
+      updateMapReadout();
+    }
+
+    function resetMap() {
+      if (!radiusMap) return;
+      mapCenter = L.latLng(defaultMapCenter[0], defaultMapCenter[1]);
+      mapRadiusMeters = 5000;
+      $('mapRadius').value = mapRadiusMeters;
+      mapCenterMarker.setLatLng(mapCenter);
+      mapRadiusCircle.setLatLng(mapCenter).setRadius(mapRadiusMeters);
+      mapRadiusHandle.setLatLng(getMapHandleLatLng(mapCenter, mapRadiusMeters));
+      radiusMap.setView(mapCenter, defaultMapZoom, { animate: true, duration: .45 });
+      updateMapReadout();
+    }
+
+    function initRadiusMap() {
+      if (!window.L || !$('radiusMap')) return;
+      const centerIcon = L.divIcon({ className: 'radius-marker-icon', html: '<span class="radius-marker-dot"></span>', iconSize: [26, 26], iconAnchor: [13, 13] });
+      const handleIcon = L.divIcon({ className: 'radius-handle-icon', html: '<span class="radius-handle-dot"></span>', iconSize: [24, 24], iconAnchor: [12, 12] });
+      mapCenter = L.latLng(defaultMapCenter[0], defaultMapCenter[1]);
+      radiusMap = L.map('radiusMap', { preferCanvas: true, zoomControl: true, scrollWheelZoom: true }).setView(mapCenter, defaultMapZoom);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors' }).addTo(radiusMap);
+      mapRadiusCircle = L.circle(mapCenter, { radius: mapRadiusMeters, color: '#2563eb', weight: 3, opacity: .9, fillColor: '#60a5fa', fillOpacity: .17 }).addTo(radiusMap);
+      mapCenterMarker = L.marker(mapCenter, { draggable: true, icon: centerIcon, title: 'Yarıçap merkezi' }).addTo(radiusMap);
+      mapRadiusHandle = L.marker(getMapHandleLatLng(mapCenter, mapRadiusMeters), { draggable: true, icon: handleIcon, title: 'Yarıçapı ayarla' }).addTo(radiusMap);
+
+      mapCenterMarker.on('drag', () => { updateMapGeometry(true); });
+      mapCenterMarker.on('dragend', () => { updateMapGeometry(true); });
+      mapRadiusHandle.on('drag', (event) => { setMapRadiusFromDrag(event.target.getLatLng()); });
+      mapRadiusHandle.on('dragend', (event) => { setMapRadiusFromDrag(event.target.getLatLng()); });
+      radiusMap.on('click', (event) => { mapCenterMarker.setLatLng(event.latlng); updateMapGeometry(true); });
+      updateMapReadout();
+      window.setTimeout(() => radiusMap.invalidateSize(), 80);
     }
 
     function resetInputs() {
@@ -1102,6 +1348,7 @@
 
     applyTheme(getStoredTheme(), false);
     scheduleCalculation();
+    initRadiusMap();
   </script>
 </body>
 </html>
